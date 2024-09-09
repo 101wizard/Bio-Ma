@@ -7,7 +7,9 @@ class SideNavBar(QWidget):
     # Signals for navigation
     dashboard_selected = Signal()
     equipment_selected = Signal()
+    add_equipment_selected = Signal()
     user_selected = Signal()
+    add_user_selected = Signal()
     profile_selected = Signal()
     logout_selected = Signal()
 
@@ -50,23 +52,33 @@ class SideNavBar(QWidget):
         # Create buttons with icons and set object names
         self.dashboard_btn = self.create_nav_button("Dashboard", qta.icon('ri.home-3-line', color='white'))
         self.equipment_btn = self.create_nav_button("Equipment", qta.icon('mdi.flask-empty-outline', color='white'))
+        self.add_equipment_btn = self.create_add_button("Add", qta.icon('mdi.flask-empty-plus-outline', color='white'))
         self.user_btn = self.create_nav_button("User", qta.icon('ph.users-four-light', color='white'))
+        self.add_user_btn = self.create_add_button("Add", qta.icon('ri.user-add-line', color='white'))
         self.profile_btn = self.create_nav_button("Profile", qta.icon('fa.user-circle-o', color='white'))
         self.logout_btn = self.create_nav_button("Logout", qta.icon('mdi6.logout', color='white'))
 
         # Set object names for the buttons
         self.dashboard_btn.setObjectName("Dashboard")
         self.equipment_btn.setObjectName("Equipment")
+        self.add_equipment_btn.setObjectName("Add Equipment")
         self.user_btn.setObjectName("User")
+        self.add_user_btn.setObjectName("Add User")
         self.profile_btn.setObjectName("Profile")
         self.logout_btn.setObjectName("Logout")
+
+        # Hide Add buttons
+        self.add_equipment_btn.hide()
+        self.add_user_btn.hide()
 
         # Add buttons to the navigation layout
         nav_layout = QVBoxLayout()
         nav_layout.addLayout(horiz_lay)
         nav_layout.addWidget(self.dashboard_btn)
         nav_layout.addWidget(self.equipment_btn)
+        nav_layout.addWidget(self.add_equipment_btn)
         nav_layout.addWidget(self.user_btn)
+        nav_layout.addWidget(self.add_user_btn)
 
         nav_layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
@@ -90,7 +102,9 @@ class SideNavBar(QWidget):
         # Connect buttons to their respective signals
         self.dashboard_btn.clicked.connect(self.dashboard_selected.emit)
         self.equipment_btn.clicked.connect(self.equipment_selected.emit)
+        self.add_equipment_btn.clicked.connect(self.add_equipment_selected.emit)
         self.user_btn.clicked.connect(self.user_selected.emit)
+        self.add_user_btn.clicked.connect(self.add_user_selected.emit)
         self.profile_btn.clicked.connect(self.profile_selected.emit)
         self.logout_btn.clicked.connect(self.logout_selected.emit)
 
@@ -102,6 +116,27 @@ class SideNavBar(QWidget):
             QPushButton {
                 background-color: transparent;
                 border: none;
+                text-align: left;
+                padding-left: 10px;
+                font-size: 16px;
+                color: #ffffff;
+            }
+            QPushButton:hover {
+                background-color: #383838;
+            }
+        """)
+        return button
+    
+    def create_add_button(self, text, icon):
+        button = QPushButton(text)
+        button.setIcon(icon)
+        button.setIconSize(QSize(24, 24))
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border-bottom: 1px solid #ffffff;
+                border-right: 1px solid #ffffff;
+                border-top-right-radius: 0px;
                 text-align: left;
                 padding-left: 10px;
                 font-size: 16px;
@@ -130,6 +165,22 @@ class SideNavBar(QWidget):
                         background-color: #383838;
                     }
                 """)
+            for button in [self.add_equipment_btn, self.add_user_btn]:
+                button.setStyleSheet("""
+                    QPushButton {
+                        background-color: transparent;
+                        border-bottom: 1px solid #ffffff;
+                        border-right: 1px solid #ffffff;
+                        border-top-right-radius: 0px;
+                        text-align: left;
+                        padding-left: 10px;
+                        font-size: 16px;
+                        color: #ffffff;
+                    }
+                    QPushButton:hover {
+                        background-color: #383838;
+                    }
+                """)
 
             # Apply the selected style to the current button
             widget.setStyleSheet("""
@@ -148,7 +199,9 @@ class SideNavBar(QWidget):
             self.lable.show()
             self.dashboard_btn.setText("Dashboard")
             self.equipment_btn.setText("Equipment")
+            self.add_equipment_btn.setText("Add")
             self.user_btn.setText("User")
+            self.add_user_btn.setText("Add")
             self.profile_btn.setText("Profile")
             self.logout_btn.setText("Logout")
             self.setFixedWidth(200)
@@ -157,7 +210,9 @@ class SideNavBar(QWidget):
             self.lable.hide()
             self.dashboard_btn.setText("")
             self.equipment_btn.setText("")
+            self.add_equipment_btn.setText("")
             self.user_btn.setText("")
+            self.add_user_btn.setText("")
             self.profile_btn.setText("")
             self.logout_btn.setText("")
             self.setFixedWidth(80)

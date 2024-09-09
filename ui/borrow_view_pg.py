@@ -217,16 +217,25 @@ class BorrowViewPage(QWidget):
     def view_equipment(self, equipment_id):
         self.main_window.equipment_details.update_content(equipment_id=equipment_id)
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.equipment_details)
+        self.main_window.side_nav_bar.move_indicator(self.main_window.side_nav_bar.findChild(QWidget, "Equipment"))
+        self.main_window.side_nav_bar.add_equipment_btn.show()
+        self.main_window.side_nav_bar.add_user_btn.hide()
         print(f"Viewing equipment ID: {equipment_id}")
 
     def show_view_borrower(self, uid):
         self.main_window.user_details.update_content(user_id=uid, title="User : Researcher")
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.user_details)
+        self.main_window.side_nav_bar.move_indicator(self.main_window.side_nav_bar.findChild(QWidget, "User"))
+        self.main_window.side_nav_bar.add_user_btn.show()
+        self.main_window.side_nav_bar.add_equipment_btn.hide()
         print(f"Viewing Borrower ID: {uid}")
 
     def show_view_approver(self, uid):
         self.main_window.user_details.update_content(user_id=uid, title="User : Lab Assistant")
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.user_details)
+        self.main_window.side_nav_bar.move_indicator(self.main_window.side_nav_bar.findChild(QWidget, "User"))
+        self.main_window.side_nav_bar.add_user_btn.show()
+        self.main_window.side_nav_bar.add_equipment_btn.hide()
         print(f"Viewing Approver ID: {uid}")
 
     def update_content(self, borrow_id):

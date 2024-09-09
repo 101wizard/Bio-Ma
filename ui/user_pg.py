@@ -75,12 +75,6 @@ class UserPage(QWidget):
         self.search_bar.textChanged.connect(self.filter_user)  # Connect to search function
         search_layout.addWidget(self.search_bar)
 
-        # Add button
-        add_button = QPushButton("Add")
-        add_button.setStyleSheet("font-size: 15px; color: #000000; background-color: #ffffff; border-radius: 10px;")
-        add_button.setFixedSize(80, 25)
-        search_layout.addWidget(add_button)
-
         # Right layout
         vlayout = QVBoxLayout()
 

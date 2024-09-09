@@ -35,7 +35,7 @@ class UserFrameTemplate(QWidget):
         # Details layout
         details_layout = QHBoxLayout()
 
-        # Equipment image
+        # User image
         self.user_image = QLabel()
         details_layout.addWidget(self.user_image)
 
@@ -93,7 +93,7 @@ class UserFrameTemplate(QWidget):
 
         self.e_vedit.clicked.connect(lambda: self.edit())
         self.e_vremove.clicked.connect(lambda: self.remove())
-        self.e_vsave.clicked.connect(lambda: self.save())
+        self.e_vsave.clicked.connect(lambda: self.save(self.u_vid.text(), self.title_label.text()))
 
         button_section.addWidget(self.e_vedit)
         button_section.addWidget(self.e_vremove)
@@ -234,10 +234,8 @@ class UserFrameTemplate(QWidget):
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.borrow_details)
         print(f"Viewing Borrow ID: {bid}")
 
-    def save(self):
-        self.e_vedit.show()
-        self.e_vremove.show()
-        self.e_vsave.hide()
+    def save(self, user_id, title):
+        self.update_content(user_id, title)
         print("save")
 
     def edit(self):
@@ -281,7 +279,7 @@ class UserFrameTemplate(QWidget):
             self.user_header.setText("Borrower ID")
             self.e_vsave.hide()
             self.e_vedit.show()
-            self.e_vremove.show()
+            self.e_vremove.hide()
         else:
             print('Error')
 
