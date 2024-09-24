@@ -2,10 +2,10 @@ from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea,
     QFrame, QSpacerItem, QSizePolicy, QLineEdit
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap, QPainter
+from PySide6.QtCore import Qt, QByteArray
+from PySide6.QtGui import QPixmap, QPainter, QImage
 import qtawesome as qta 
-
+import mysql.connector
 
 class UserFrameTemplate(QWidget):
     def __init__(self, main_window):
@@ -250,13 +250,15 @@ class UserFrameTemplate(QWidget):
 
     def update_content(self, user_id, title):
         self.title_label.setText(title)
-        content = self.fetch_content(user_id)
+        content = self.fetch_content(user_id, title)
 
-        pixmap = QPixmap(content[4]) if content[4] else self.get_default_image()  # Use default if no image
-        self.user_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))  # Scale image
         self.user_image.setFixedSize(300, 300)
         self.user_image.setStyleSheet("""border:1px solid #ffffff""")
         self.user_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        image_data = QByteArray.fromBase64(content[4])
+        pixmap = QPixmap(QImage.fromData(image_data))
+        self.set_rounded_pixmap(self.user_image,pixmap)
 
         self.u_vname.setText (content[1])
         self.u_vid.setText   (content[0])
@@ -283,16 +285,67 @@ class UserFrameTemplate(QWidget):
         else:
             print('Error')
 
-    def fetch_content(self, user_id):
-        #query
-        return (user_id,"u_name","016-4552121","mail@mail.com","")
+    def fetch_content(self, user_id, title):
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
 
-    def get_default_image(self):
-        # Create a default image using a Qt Awesome icon
-        icon = qta.icon('fa.file-image-o', color='white')  # Use Qt Awesome icon
-        pixmap = QPixmap(180, 180)
-        pixmap.fill(Qt.transparent)  # Fill with transparent background
-        painter = QPainter(pixmap)
-        icon.paint(painter, pixmap.rect())
+            # Determine the query based on the title
+            if title == "User : Lab Assistant":
+                id_numeric_part = int(user_id[2:])
+                query = "SELECT la_id, la_name, la_phone, la_email, la_img FROM lab_assistant WHERE la_id = %s"
+            elif title == "User : Researcher":
+                id_numeric_part = int(user_id[1:])
+                query = "SELECT r_id, r_name, r_phone, r_email, r_img FROM researcher WHERE r_id = %s"
+            elif title == "Profile":
+                # You can decide how to fetch profile data, here assuming it's lab assistant
+                id_numeric_part = int(user_id[2:])
+                query = "SELECT la_id, la_name, la_phone, la_email, la_img FROM lab_assistant WHERE la_id = %s"
+
+            # Execute the query
+            cursor.execute(query, (id_numeric_part,))
+
+            # Fetch the result
+            user_data = cursor.fetchone()
+
+            # Prepare and return the formatted result
+            if user_data:
+                # For Lab Assistant
+                if title == "User : Lab Assistant":
+                    return (f"LA{user_data[0]:04d}", user_data[1], user_data[2], user_data[3], user_data[4])
+                # For Researcher
+                elif title == "User : Researcher":
+                    return (f"R{user_data[0]:04d}", user_data[1], user_data[2], user_data[3], user_data[4])
+                # For Profile (assuming Lab Assistant)
+                elif title == "Profile":
+                    return (f"LA{user_data[0]:04d}", user_data[1], user_data[2], user_data[3], user_data[4])
+            else:
+                print("No data found for the provided user ID.")
+
+        except mysql.connector.Error as e:
+            # Handle any SQL or connection errors
+            print(f"An error occurred while fetching user content: {e}")
+            return []
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+    def set_rounded_pixmap(self, label, pixmap):
+        rounded_pixmap = pixmap.scaled(label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        mask = QPixmap(rounded_pixmap.size())
+        mask.fill(Qt.transparent)
+        painter = QPainter(mask)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(Qt.black)
+        painter.drawRoundedRect(mask.rect(), 15, 15)
+        rounded_pixmap.setMask(mask.mask())
         painter.end()
-        return pixmap
+        label.setPixmap(rounded_pixmap)

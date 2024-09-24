@@ -1,35 +1,16 @@
 import sys
 import cv2
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QHBoxLayout
-from PySide6.QtCore import Qt, QTimer, QThread, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPixmap
-
-class CameraThread(QThread):
-    frameCaptured = Signal(object)
-
-    def __init__(self):
-        super().__init__()
-        self.running = True
-
-    def run(self):
-        cap = cv2.VideoCapture(0)
-        while self.running:
-            ret, frame = cap.read()
-            if ret:
-                self.frameCaptured.emit(frame)
-        cap.release()
-
-    def stop(self):
-        self.running = False
-        self.quit()
-        self.wait()
+from camera_thread import CameraThread
 
 class LoginPage(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Login")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1200, 800)
         self.setStyleSheet("background-color: #ADA5A0;")  # Set background color of the main window
 
         # Create the main layout
@@ -117,10 +98,6 @@ class LoginPage(QWidget):
             self.main_window = MainWindow(uid)  # Pass the UID to the main window
             self.main_window.show()
             self.close()  # Close the login window
-
-    def closeEvent(self, event):
-        self.camera_thread.stop()  # Ensure the camera thread stops when closing the window
-        event.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,10 +1,11 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QLineEdit, QGridLayout
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QByteArray, QBuffer, QIODevice
 from PySide6.QtGui import QPixmap, QPainter, QIntValidator
 import qtawesome as qta
-
+import base64
+import mysql.connector
 
 class AddEquipmentPage(QWidget):
     def __init__(self, main_window):
@@ -24,6 +25,9 @@ class AddEquipmentPage(QWidget):
             font-size: 20px;
             font-weight: bold;
         """)
+
+        #Picture variable
+        self.aepic_path = ''
 
         # Widget content area
         widget = QWidget()
@@ -79,7 +83,7 @@ class AddEquipmentPage(QWidget):
         details_layout.addWidget(self.a_ename, 0, 2, Qt.AlignmentFlag.AlignVCenter)
 
         # ID Display
-        self.a_eid = QLabel("E1001")
+        self.a_eid = QLabel()
         self.a_eid.setStyleSheet("color: #ffffff;")
         details_layout.addWidget(self.a_eid, 1, 2, Qt.AlignmentFlag.AlignVCenter)
 
@@ -138,6 +142,50 @@ class AddEquipmentPage(QWidget):
         main_layout.addWidget(widget)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
+    def loadaddequipment(self):
+        self.equipment_image.setPixmap(QPixmap(self.get_default_image()).scaled(100, 100, Qt.KeepAspectRatio))  # Scale image
+        self.equipment_image.setStyleSheet("""border:1px solid #ffffff""")
+        self.equipment_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.a_ename.setText('')
+        self.a_etotal.setText('0')
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # SQL Query to get the current auto-increment value
+            query = """SELECT AUTO_INCREMENT 
+                    FROM information_schema.TABLES 
+                    WHERE TABLE_SCHEMA = 'test' 
+                    AND TABLE_NAME = 'equipment'"""
+            cursor.execute(query)
+
+            # Fetch the result (the next auto-increment value)
+            result = cursor.fetchone()
+
+            # If there is an auto-increment value, use it; otherwise, start from 1
+            if result and result[0] is not None:
+                next_id = result[0]
+            else:
+                next_id = 1
+
+            # Set the equipment ID in the format "E{id:04d}"
+            self.a_eid.setText(f"E{next_id:04d}")
+
+        except mysql.connector.Error as e:
+            # Handle any SQL or connection errors
+            print(f"An error occurred while fetching the next ID: {e}")
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection:
+                connection.close()
+
     def set_rounded_pixmap(self, label, pixmap):
         rounded_pixmap = pixmap.scaled(label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         mask = QPixmap(rounded_pixmap.size())
@@ -163,12 +211,58 @@ class AddEquipmentPage(QWidget):
         file_dialog = QFileDialog(self)
         file_path, _ = file_dialog.getOpenFileName(self, "Select Image", "", "Images (*.png *.xpm *.jpg)")
         if file_path:
+            self.aepic_path = file_path
             pixmap = QPixmap(file_path)
             self.set_rounded_pixmap(self.equipment_image, pixmap)
 
     def add(self):
+        # Get equipment name
+        equipment_name = self.a_ename.text()
+
+        # Get total amount
+        total_amount = int(self.a_etotal.text())
+
+        # Convert image to a binary format (for storing in database)
+        if image:
+            image = open(self.aepic_path, 'rb').read()
+            encoded_image = base64.b64encode(image)
+        else:
+            encoded_image = None
+
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # SQL Query to insert equipment into the database
+            query = """
+            INSERT INTO equipment (e_name, e_img, e_amount, e_curr_amount)
+            VALUES (%s, %s, %s, %s)
+            """
+            # Insert current amount equal to total amount initially
+            data = (equipment_name, encoded_image, total_amount, total_amount)
+
+            # Execute the SQL query
+            cursor.execute(query, data)
+
+            # Commit the transaction
+            connection.commit()
+
+        except mysql.connector.Error as e:
+            # Handle any SQL or connection errors
+            print(f"An error occurred while connecting to the database: {e}")
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
         self.main_window.show_equipment()
-        print("Add function")
 
     def get_default_image(self):
         # Create a default image using a Qt Awesome icon

@@ -2,9 +2,10 @@ from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea,
     QFrame, QSpacerItem, QSizePolicy, QLineEdit
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap, QPainter
+from PySide6.QtCore import Qt, QByteArray
+from PySide6.QtGui import QPixmap, QPainter, QImage
 import qtawesome as qta 
+import mysql.connector
 
 class EquipmentViewPage(QWidget):
     def __init__(self, main_window):
@@ -256,16 +257,22 @@ class EquipmentViewPage(QWidget):
     def update_content(self, equipment_id):
         content = self.fetch_content(equipment_id)
 
-        pixmap = QPixmap(content[2]) if content[2] else self.get_default_image()  # Use default if no image
-        self.equipment_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))  # Scale image
         self.equipment_image.setFixedSize(300, 300)
         self.equipment_image.setStyleSheet("""border:1px solid #ffffff""")
         self.equipment_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        if content[2] != '':
+            image_data = QByteArray.fromBase64(content[2])
+            pixmap = QPixmap(QImage.fromData(image_data))
+            self.set_rounded_pixmap(self.equipment_image,pixmap)
+        else:
+            pixmap = self.get_default_image()
+            self.equipment_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio)) 
+
         self.e_vname.setText (content[1])
         self.e_vid.setText   (content[0])
-        self.e_vstock.setText(content[4])
-        self.e_vtotal.setText(content[3])
+        self.e_vstock.setText(str(content[4]))
+        self.e_vtotal.setText(str(content[3]))
 
         self.populate_borrow_list(self.fetch_borrow_list(equipment_id))
 
@@ -274,8 +281,42 @@ class EquipmentViewPage(QWidget):
         self.e_vremove.show()
 
     def fetch_content(self, equipment_id):
-        #query
-        return (equipment_id,"e_name","","e_amount","e_curr_amount")
+        try:
+            # Extract numeric part from the equipment_id (e.g., "E0001" -> 1)
+            id_numeric_part = int(equipment_id[1:])  # Remove "E" and convert the rest to int
+
+            # Establish a connection to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # SQL query to fetch equipment details based on e_id
+            query = "SELECT e_id, e_name, e_img, e_amount, e_curr_amount FROM equipment WHERE e_id = %s"
+            cursor.execute(query, (id_numeric_part,))
+
+            # Fetch the result (there should only be one row)
+            result = cursor.fetchone()
+
+            # If a result is found, return it as a tuple; otherwise, return a default tuple
+            if result:
+                e_id, e_name, e_img, e_amount, e_curr_amount = result
+                return (f"E{e_id:04d}", e_name, e_img, e_amount, e_curr_amount)
+            else:
+                # Return default values if no equipment was found with the given ID
+                return (equipment_id, "Unknown Name", "", "0", "0")
+
+        except mysql.connector.Error as e:
+            print(f"An error occurred while fetching equipment content: {e}")
+            return (equipment_id, "Error", "", "0", "0")
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection:
+                connection.close()
 
     def get_default_image(self):
         # Create a default image using a Qt Awesome icon
@@ -286,3 +327,15 @@ class EquipmentViewPage(QWidget):
         icon.paint(painter, pixmap.rect())
         painter.end()
         return pixmap
+
+    def set_rounded_pixmap(self, label, pixmap):
+        rounded_pixmap = pixmap.scaled(label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        mask = QPixmap(rounded_pixmap.size())
+        mask.fill(Qt.transparent)
+        painter = QPainter(mask)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(Qt.black)
+        painter.drawRoundedRect(mask.rect(), 15, 15)
+        rounded_pixmap.setMask(mask.mask())
+        painter.end()
+        label.setPixmap(rounded_pixmap)

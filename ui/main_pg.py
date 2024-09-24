@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
 
         # Main window settingsw
         self.setWindowTitle("BIO-MA")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1200, 800)
 
         # Create the main layout
         main_widget = QWidget()
@@ -92,22 +92,26 @@ class MainWindow(QMainWindow):
         self.side_nav_bar.add_user_btn.hide()
 
     def show_equipment(self):
+        self.equipment_page.load_equipment_pg()
         self.stacked_widget.setCurrentWidget(self.equipment_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Equipment"))
         self.side_nav_bar.add_equipment_btn.show()
         self.side_nav_bar.add_user_btn.hide()
 
     def show_add_equipment(self):
+        self.add_equipment_page.loadaddequipment()
         self.stacked_widget.setCurrentWidget(self.add_equipment_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Add Equipment"))
 
     def show_user(self):
+        self.user_page.load_user_pg()
         self.stacked_widget.setCurrentWidget(self.user_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "User"))
         self.side_nav_bar.add_user_btn.show()
         self.side_nav_bar.add_equipment_btn.hide()
 
     def show_add_user(self):
+        self.add_user_page.loadadduser()
         self.stacked_widget.setCurrentWidget(self.add_user_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Add User"))
 

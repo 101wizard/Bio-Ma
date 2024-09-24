@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QPainter
 import qtawesome as qta 
 from RotatedButton import OrientablePushButton
+import mysql.connector
 
 class UserPage(QWidget):
     def __init__(self, main_window):
@@ -157,16 +158,18 @@ class UserPage(QWidget):
                                         background-color: #383838;
                                       }""")
 
-        # Default to showing researcher list
-        self.user = self.fetch_user_list("R")
-
-        # Populate list
-        self.populate_user_list(self.user, "R")
-
         main_layout.addWidget(widget)
 
         # Adjust the size of the user_content to fit its contents without expanding
         self.user_content.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+
+    def load_user_pg(self):
+        # Default to showing researcher list
+        self.user = self.fetch_user_list("R")
+        self.show_researcher()
+
+        # Populate list
+        self.populate_user_list(self.user, "R")
         
     def show_researcher(self):
         self.label.setText("User : Researcher")
@@ -217,30 +220,53 @@ class UserPage(QWidget):
         self.populate_user_list(self.user, self.current_signal)
 
     def fetch_user_list(self, signal):
-        if signal == "R":
-            # Researcher data
-            researcher_list = [
-                (1, "ResearcherA", "011-1245611", "ResearcherA@mail.com"),
-                (2, "ResearcherB", "011-1245611", "ResearcherB@mail.com"),
-                (3, "ResearcherC", "011-1245611", "ResearcherC@mail.com"),
-                (4, "ResearcherD", "011-1245611", "ResearcherD@mail.com"),
-                (5, "ResearcherE", "011-1245611", "ResearcherE@mail.com")
-            ]
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
 
-            return researcher_list
-        
-        elif signal == "LA":
-            # Lab Assistant data
-            lab_assistant_list = [
-                (1, "LabA", "011-1245611", "LabA@mail.com"),
-                (2, "LabB", "011-1245611", "LabB@mail.com"),
-                (3, "LabC", "011-1245611", "LabC@mail.com"),
-                (4, "LabD", "011-1245611", "LabD@mail.com"),
-                (5, "LabE", "011-1245611", "LabE@mail.com")
-            ]
+            user_list = []
 
-            return lab_assistant_list
+            if signal == "R":
+                # SQL Query to fetch researcher data
+                query = "SELECT r_id, r_name, r_phone, r_email FROM researcher"
+                cursor.execute(query)
 
+                # Fetch all the results
+                researcher_data = cursor.fetchall()
+
+                # Prepare the researcher list in the desired format
+                for row in researcher_data:
+                    user_list.append((row[0], row[1], row[2], row[3]))  # (id, name, phone, email)
+            
+            elif signal == "LA":
+                # SQL Query to fetch lab assistant data
+                query = "SELECT la_id, la_name, la_phone, la_email FROM lab_assistant"
+                cursor.execute(query)
+
+                # Fetch all the results
+                lab_assistant_data = cursor.fetchall()
+
+                # Prepare the lab assistant list in the desired format
+                for row in lab_assistant_data:
+                    user_list.append((row[0], row[1], row[2], row[3]))  # (id, name, phone, email)
+            
+            return user_list
+
+        except mysql.connector.Error as e:
+            # Handle any SQL or connection errors
+            print(f"An error occurred while fetching the user list: {e}")
+            return []
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
 
     def populate_user_list(self, user_list, signal):
         # Clear existing items

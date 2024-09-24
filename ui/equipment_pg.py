@@ -2,9 +2,12 @@ from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea,
     QFrame, QSpacerItem, QSizePolicy, QLineEdit
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap, QPainter
+from PySide6.QtCore import Qt, QByteArray
+from PySide6.QtGui import QPixmap, QPainter, QImage
 import qtawesome as qta 
+import mysql.connector
+import base64
+
 
 class EquipmentPage(QWidget):
     def __init__(self, main_window):
@@ -83,29 +86,53 @@ class EquipmentPage(QWidget):
                                         background-color: #383838;
                                       }""")
         
-        # Store equipment for filtering
-        self.all_equipment = self.fetch_equipment_list()
-
-        # Populate equipment list
-        self.populate_equipment_list(self.all_equipment)
-
         main_layout.addWidget(label)
         main_layout.addWidget(widget)
 
         # Adjust the size of the equipment_content to fit its contents without expanding
         self.equipment_content.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum) 
 
-    def fetch_equipment_list(self):
-        equipment_list = [
-            (None, "Flask", 15, 20, 1),
-            (None, "Flask 200", 12, 50, 2),
-            (None, "Flask 300", 14, 40, 3),
-            (None, "Flask", 15, 23, 4),
-            (None, "Flask", 15, 26, 15),
-            (None, "Flask", 15, 17, 10)
-        ]
+    def load_equipment_pg(self):
+        # Store equipment for filtering
+        self.all_equipment = self.fetch_equipment_list()
 
-        return equipment_list
+        # Populate equipment list
+        self.populate_equipment_list(self.all_equipment)
+
+    def fetch_equipment_list(self):
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # SQL Query to fetch equipment details including the image (e_img)
+            query = "SELECT e_id, e_name, e_curr_amount, e_amount, e_img FROM equipment"
+            cursor.execute(query)
+
+            # Fetch all the results
+            equipment_data = cursor.fetchall()
+
+            # Prepare the equipment list in the desired format
+            equipment_list = []
+            for row in equipment_data:
+                equipment_list.append((row[4], row[1], row[2], row[3], row[0]))
+
+            # Return the formatted equipment list
+            return equipment_list
+
+        except mysql.connector.Error as e:
+            # Handle any SQL or connection errors
+            print(f"An error occurred while fetching the equipment list: {e}")
+            return []
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection:
+                connection.close()
 
     def populate_equipment_list(self, equipment_list):
         # Clear existing equipment items
@@ -115,12 +142,11 @@ class EquipmentPage(QWidget):
                 item.widget().deleteLater()  # Delete the widget
 
         # Add equipment items to layout
-        for imgpath, name, current_amount, amount, id in equipment_list:
+        for img, name, current_amount, amount, id in equipment_list:
             equipment_id = f"E{id:04d}"  # Format ID
-            self.add_equipment_item(imgpath, name, current_amount, amount, equipment_id)
+            self.add_equipment_item(img, name, current_amount, amount, equipment_id)
 
-
-    def add_equipment_item(self, imgpath, name, current_amount, amount, equipment_id):
+    def add_equipment_item(self, img, name, current_amount, amount, equipment_id):
         equipment_frame = QFrame()
         equipment_frame.setFixedHeight(200)  # Consistent height for each equipment bar
         layout = QVBoxLayout(equipment_frame)
@@ -130,12 +156,18 @@ class EquipmentPage(QWidget):
 
         # Equipment image
         equipment_image = QLabel()
-        pixmap = QPixmap(imgpath) if imgpath else self.get_default_image()  # Use default if no image
-        equipment_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))  # Scale image
         equipment_image.setFixedSize(180, 180)
         equipment_image.setStyleSheet("""border:1px solid #ffffff""")
         equipment_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         equipment_layout.addWidget(equipment_image)
+
+        if img != '':
+            image_data = QByteArray.fromBase64(img)
+            pixmap = QPixmap(QImage.fromData(image_data))
+            self.set_rounded_pixmap(equipment_image,pixmap)
+        else:
+            pixmap =  self.get_default_image()
+            equipment_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))  # Scale image
 
         # Equipment details layout
         details_layout = QVBoxLayout()
@@ -207,3 +239,14 @@ class EquipmentPage(QWidget):
         )
         self.populate_equipment_list(filtered_equipment)
 
+    def set_rounded_pixmap(self, label, pixmap):
+        rounded_pixmap = pixmap.scaled(label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        mask = QPixmap(rounded_pixmap.size())
+        mask.fill(Qt.transparent)
+        painter = QPainter(mask)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(Qt.black)
+        painter.drawRoundedRect(mask.rect(), 15, 15)
+        rounded_pixmap.setMask(mask.mask())
+        painter.end()
+        label.setPixmap(rounded_pixmap)
