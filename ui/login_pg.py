@@ -1,9 +1,10 @@
 import sys
 import cv2
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QHBoxLayout, QMessageBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPixmap
 from camera_thread import CameraThread
+import base64
 
 class LoginPage(QWidget):
     def __init__(self):
@@ -29,6 +30,7 @@ class LoginPage(QWidget):
         
         # Create a label for the title (or camera display)
         self.camera_display = QLabel(self)
+        self.camera_display.setStyleSheet("border:1px solid #ffffff")
         self.camera_display.setFixedWidth(300)
         self.camera_display.setAlignment(Qt.AlignCenter)
         login_layout.addWidget(self.camera_display, 1)
@@ -98,6 +100,29 @@ class LoginPage(QWidget):
             self.main_window = MainWindow(uid)  # Pass the UID to the main window
             self.main_window.show()
             self.close()  # Close the login window
+
+    def capture_image(self):
+        self.camera_thread.stop()
+        cap = cv2.VideoCapture(1)  # Use the appropriate camera index (0, 1, etc.)
+        
+        if not cap.isOpened():
+            QMessageBox.warning(self, 'Error', 'Could not open camera!')
+            return
+
+        ret, frame = cap.read()  # Capture a frame
+        cap.release()  # Release the camera
+
+        if not ret:
+            QMessageBox.warning(self, 'Error', 'Failed to capture image!')
+            return
+
+        # Encode image to base64
+        _, buffer = cv2.imencode('.jpg', frame)  # Encode as JPEG
+        img_bytes = buffer.tobytes()  # Convert to bytes
+        encoded_image = base64.b64encode(img_bytes).decode('utf-8')  # Convert to base64 string
+
+        return encoded_image
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
