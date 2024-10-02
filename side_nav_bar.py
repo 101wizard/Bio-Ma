@@ -51,10 +51,10 @@ class SideNavBar(QWidget):
 
         # Create buttons with icons and set object names
         self.dashboard_btn = self.create_nav_button("Dashboard", qta.icon('ri.home-3-line', color='white'))
-        self.equipment_btn = self.create_nav_button("Equipment", qta.icon('mdi.flask-empty-outline', color='white'))
-        self.add_equipment_btn = self.create_add_button("Add", qta.icon('mdi.flask-empty-plus-outline', color='white'))
-        self.user_btn = self.create_nav_button("User", qta.icon('ph.users-four-light', color='white'))
-        self.add_user_btn = self.create_add_button("Add", qta.icon('ri.user-add-line', color='white'))
+        self.equipment_btn = self.create_nav_button("Manage\nEquipment", qta.icon('mdi.flask-empty-outline', color='white'))
+        self.add_equipment_btn = self.create_add_button("Add\nEquipment", qta.icon('mdi.flask-empty-plus-outline', color='white'))
+        self.user_btn = self.create_nav_button("Manage\nUser", qta.icon('ph.users-four-light', color='white'))
+        self.add_user_btn = self.create_add_button("Add\nUser", qta.icon('ri.user-add-line', color='white'))
         self.profile_btn = self.create_nav_button("Profile", qta.icon('fa.user-circle-o', color='white'))
         self.logout_btn = self.create_nav_button("Logout", qta.icon('mdi6.logout', color='white'))
 

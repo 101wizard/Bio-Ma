@@ -213,3 +213,4 @@ class DashboardPage(QWidget):
     def show_borrow_page(self):
         # Set the stacked widget to display the borrow page
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.borrow_page)
+        self.main_window.borrow_page.loadborrowpage()

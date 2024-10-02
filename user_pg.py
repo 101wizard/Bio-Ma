@@ -35,7 +35,7 @@ class UserPage(QWidget):
         # Button layout for switching between Researcher and Lab Assistant
         switch_layout = QVBoxLayout()
         self.researcher_button = OrientablePushButton("Researcher", """OrientablePushButton{
-                                                                            background-color: #444444; 
+                                                                            background-color: #303030; 
                                                                             border-radius: 0;
                                                                             font-size: 15px;
                                                                             border-top-right-radius: 10px;
@@ -48,7 +48,7 @@ class UserPage(QWidget):
         self.researcher_button.clicked.connect(self.show_researcher)
 
         self.lab_assistant_button = OrientablePushButton("Lab Assistant", """OrientablePushButton{
-                                                                                background-color: #303030; 
+                                                                                background-color: #5e8000; 
                                                                                 border-radius: 0;
                                                                                 font-size: 15px;
                                                                                 border-top-left-radius: 10px;
@@ -56,7 +56,7 @@ class UserPage(QWidget):
                                                                                 border-left: 0;
                                                                                 border-bottom: 1px solid #ffffff;}
                                                                              OrientablePushButton:hover{
-                                                                                background-color: #383838;}""")
+                                                                                background-color: #99cc00;}""")
         self.lab_assistant_button.setFixedWidth(40)
         self.lab_assistant_button.setOrientation(OrientablePushButton.VerticalTopToBottom)
         self.lab_assistant_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -148,15 +148,7 @@ class UserPage(QWidget):
                                         color: #ffffff;
                                         font-size: 15px;
                                       }
-                                      QPushButton {
-                                        border-left: 1px solid #ffffff;
-                                        border-radius: 0;
-                                        border-top-right-radius: 10px;
-                                        border-bottom-right-radius: 10px;
-                                      }
-                                      QPushButton:hover {
-                                        background-color: #383838;
-                                      }""")
+                                      """)
 
         main_layout.addWidget(widget)
 
@@ -176,7 +168,7 @@ class UserPage(QWidget):
         self.user = self.fetch_user_list("R")
         self.current_signal = "R"  # Update current signal
         self.researcher_button.setStyleSheet("""OrientablePushButton{
-                                                    background-color: #444444; 
+                                                    background-color: #303030; 
                                                     border-radius: 0;
                                                     font-size: 15px;
                                                     border-top-right-radius: 10px;
@@ -184,7 +176,7 @@ class UserPage(QWidget):
                                                     border-left: 0;
                                                     border-bottom: 1px solid #ffffff;}""")
         self.lab_assistant_button.setStyleSheet("""OrientablePushButton{
-                                                        background-color: #303030; 
+                                                        background-color: #5e8000; 
                                                         border-radius: 0;
                                                         font-size: 15px;
                                                         border-top-left-radius: 10px;
@@ -192,7 +184,7 @@ class UserPage(QWidget):
                                                         border-left: 0;
                                                         border-bottom: 1px solid #ffffff;}
                                                     OrientablePushButton:hover{
-                                                        background-color: #383838;}""")
+                                                        background-color: #99cc00;}""")
         self.populate_user_list(self.user, self.current_signal)
 
     def show_lab_assistant(self):
@@ -200,7 +192,7 @@ class UserPage(QWidget):
         self.user = self.fetch_user_list("LA")
         self.current_signal = "LA"  # Update current signal
         self.researcher_button.setStyleSheet("""OrientablePushButton{
-                                                    background-color: #303030; 
+                                                    background-color: #5e8000; 
                                                     border-radius: 0;
                                                     font-size: 15px;
                                                     border-top-right-radius: 10px;
@@ -208,9 +200,9 @@ class UserPage(QWidget):
                                                     border-left: 0;
                                                     border-bottom: 1px solid #ffffff;}
                                                 OrientablePushButton:hover{
-                                                    background-color: #383838;}""")
+                                                    background-color: #99cc00;}""")
         self.lab_assistant_button.setStyleSheet("""OrientablePushButton{
-                                                        background-color: #444444; 
+                                                        background-color: #303030; 
                                                         border-radius: 0;
                                                         font-size: 15px;
                                                         border-top-left-radius: 10px;
