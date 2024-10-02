@@ -1,4 +1,3 @@
-# side_nav_bar.py
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSpacerItem, QSizePolicy
 from PySide6.QtCore import Signal, QPropertyAnimation, QRect, QSize, QEasingCurve
 import qtawesome as qta

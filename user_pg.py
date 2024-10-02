@@ -148,6 +148,15 @@ class UserPage(QWidget):
                                         color: #ffffff;
                                         font-size: 15px;
                                       }
+                                      QPushButton {
+                                        border-left: 1px solid #ffffff;
+                                        border-radius: 0;
+                                        border-top-right-radius: 10px;
+                                        border-bottom-right-radius: 10px;
+                                      }
+                                      QPushButton:hover {
+                                        background-color: #383838;
+                                      }
                                       """)
 
         main_layout.addWidget(widget)

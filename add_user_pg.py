@@ -57,7 +57,7 @@ class AddUserPage(QWidget):
         # Name Input
         name_label = QLabel("Name:")
         self.a_uname = QLineEdit()
-        self.a_uname.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.a_uname.setStyleSheet("background-color: #484848; color: #ffffff;")
         self.details_layout.addWidget(name_label, 1, 1, Qt.AlignmentFlag.AlignVCenter)
         self.details_layout.addWidget(self.a_uname, 1, 2, Qt.AlignmentFlag.AlignVCenter)
 
@@ -71,14 +71,14 @@ class AddUserPage(QWidget):
         # Phone Input
         phone_label = QLabel("Phone:")
         self.a_uphone = QLineEdit()
-        self.a_uphone.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.a_uphone.setStyleSheet("background-color: #484848; color: #ffffff;")
         self.details_layout.addWidget(phone_label, 3, 1, Qt.AlignmentFlag.AlignVCenter)
         self.details_layout.addWidget(self.a_uphone, 3, 2, Qt.AlignmentFlag.AlignVCenter)
 
         # Email Input
         email_label = QLabel("Email:")
         self.a_uemail = QLineEdit()
-        self.a_uemail.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.a_uemail.setStyleSheet("background-color: #484848; color: #ffffff;")
         self.details_layout.addWidget(email_label, 4, 1, Qt.AlignmentFlag.AlignVCenter)
         self.details_layout.addWidget(self.a_uemail, 4, 2, Qt.AlignmentFlag.AlignVCenter)
 
@@ -86,13 +86,13 @@ class AddUserPage(QWidget):
         self.password_label = QLabel("Password:")
         self.a_upassword = QLineEdit()
         self.a_upassword.setEchoMode(QLineEdit.Password)
-        self.a_upassword.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.a_upassword.setStyleSheet("background-color: #484848; color: #ffffff;")
 
         # Confirm Password Input
         self.confirm_password_label = QLabel("Confirm Password:")
         self.a_uconfirm_password = QLineEdit()
         self.a_uconfirm_password.setEchoMode(QLineEdit.Password)
-        self.a_uconfirm_password.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.a_uconfirm_password.setStyleSheet("background-color: #484848; color: #ffffff;")
 
         # Dynamically added password fields based on category
         self.password_layout_index = self.details_layout.rowCount()  # Get current row count to insert at

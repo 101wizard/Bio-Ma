@@ -107,9 +107,15 @@ class LoginPage(QWidget):
         self.current_frame = frame
 
     def login(self):
+        uid = self.uid_input.text()
+
         # Check if the current frame is available
         if self.current_frame is None:
             QMessageBox.warning(self, "Error", "No camera frame available for detection.")
+            return
+        
+        if uid != "":
+            self.fallback_to_uid_password()
             return
 
         # Pass the captured frame to spoof detection
@@ -157,6 +163,9 @@ class LoginPage(QWidget):
 
             for row in lab_assistant_data:
                 user_list.append((row[0], row[1], row[2]))  # (id, salt, password)
+
+            if uid == "":
+                return
 
             if not re.match(pattern, uid):
                 QMessageBox.warning(self, "Error", "Invalid UID format")

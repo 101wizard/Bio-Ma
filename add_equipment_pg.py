@@ -79,7 +79,7 @@ class AddEquipmentPage(QWidget):
         # Input fields for Name, ID, and Total (placed in row 0, column 2; row 1, column 2; row 2, column 2 respectively)
         # Name Input
         self.a_ename = QLineEdit()
-        self.a_ename.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.a_ename.setStyleSheet("background-color: #484848; color: #ffffff;")
         details_layout.addWidget(self.a_ename, 0, 2, Qt.AlignmentFlag.AlignVCenter)
 
         # ID Display
@@ -93,7 +93,7 @@ class AddEquipmentPage(QWidget):
         self.a_etotal.setValidator(QIntValidator())
         self.a_etotal.setFixedSize(50, 30)
         self.a_etotal.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.a_etotal.setStyleSheet("background-color: #ffffff; color: #000000; border-radius: 5px;")
+        self.a_etotal.setStyleSheet("background-color: #484848; color: #ffffff; border-radius: 5px;")
 
         minus_button = QPushButton("-")
         minus_button.setFixedSize(30, 30)
@@ -102,8 +102,8 @@ class AddEquipmentPage(QWidget):
         plus_button.setFixedSize(30, 30)
         plus_button.clicked.connect(self.increase_total)
 
-        minus_button.setStyleSheet("background-color: #ffffff; border-radius: 15px; color:#000000;")
-        plus_button.setStyleSheet("background-color: #ffffff; border-radius: 15px; color:#000000;")
+        minus_button.setStyleSheet("background-color: #484848; border-top-left-radius: 5px; border-bottom-left-radius: 5px; border-top-right-radius: 0px; border-bottom-right-radius: 0px; color:#ffffff;")
+        plus_button.setStyleSheet("background-color: #484848; border-top-left-radius: 0px; border-bottom-left-radius: 0px;  border-top-right-radius: 5px; border-bottom-right-radius: 5px; color:#ffffff;")
 
         num_layout.addWidget(minus_button)
         num_layout.addWidget(self.a_etotal)
