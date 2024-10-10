@@ -14,6 +14,7 @@ from borrow_pg import BorrowPage
 from return_pg import ReturnPage
 
 from borrow_view_pg import BorrowViewPage
+from camera_thread import CameraThread
 
 class MainWindow(QMainWindow):
     def __init__(self, uid):
@@ -81,6 +82,9 @@ class MainWindow(QMainWindow):
         self.side_nav_bar.add_user_selected.connect(self.show_add_user)
         self.side_nav_bar.profile_selected.connect(self.show_profile)
         self.side_nav_bar.logout_selected.connect(self.logout)
+
+        self.camera_thread = CameraThread()
+        self.camera_thread.start()
         
         # Show the dashboard page by default
         self.show_dashboard()

@@ -40,8 +40,9 @@ class AddUserPage(QWidget):
         self.user_image.setStyleSheet("border:1px solid #ffffff")
         self.user_image.setAlignment(Qt.AlignCenter)
 
-        self.camera_thread = CameraThread()
-        self.camera_thread.frameCaptured.connect(self.update_camera_display)
+        self.main_window.camera_thread.stop()
+        self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
+        self.main_window.camera_thread.start()
 
         # Add image to GridLayout in row 0, column 0 (spanning rows)
         self.details_layout.addWidget(self.user_image, 0, 0, 6, 1, Qt.AlignmentFlag.AlignLeft)
@@ -122,7 +123,6 @@ class AddUserPage(QWidget):
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
     def loadadduser(self):
-        self.camera_thread.start()
         self.category_combo.setCurrentIndex(0)
         self.a_uname.setText('')
         self.a_uemail.setText('')
@@ -343,7 +343,7 @@ class AddUserPage(QWidget):
         self.user_image.setPixmap(QPixmap.fromImage(qImg))
 
     def capture_image(self):
-        self.camera_thread.stop()
+        #self.camera_thread.stop()
         cap = cv2.VideoCapture(1)  # Use the appropriate camera index (0, 1, etc.)
         
         if not cap.isOpened():

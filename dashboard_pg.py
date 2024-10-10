@@ -209,6 +209,7 @@ class DashboardPage(QWidget):
     def show_return_page(self):
         # Set the stacked widget to display the return page
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.return_page)
+        self.main_window.borrow_page.loadreturnpage()
 
     def show_borrow_page(self):
         # Set the stacked widget to display the borrow page

@@ -36,8 +36,8 @@ class ReturnPage(QWidget):
         self.user_image.setStyleSheet("border:1px solid #ffffff")
         self.user_image.setAlignment(Qt.AlignCenter)
 
-        self.camera_thread = CameraThread()
-        self.camera_thread.frameCaptured.connect(self.update_camera_display)
+        #self.camera_thread = CameraThread()
+        self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
 
         # Add image to GridLayout in row 0, column 0 (spanning rows)
         self.details_layout.addWidget(self.user_image, 0, 0, 6, 1, Qt.AlignmentFlag.AlignLeft)
@@ -93,9 +93,8 @@ class ReturnPage(QWidget):
         self.timer.timeout.connect(self.recognize_and_update_details)
         self.timer.start(1000)  # Trigger every second for face detection
 
-    def loadborrowpage(self):
+    def loadreturnpage(self):
         self.clear_fields()
-        self.camera_thread.start()
 
     def recognize_and_update_details(self):
         if hasattr(self, 'current_frame'):
