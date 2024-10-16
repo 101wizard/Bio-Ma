@@ -302,12 +302,14 @@ class BorrowReturnLoadPage(QWidget):
 
     def navigate_to_return_pg(self):
         # Navigate to the return page
-        self.main_window.stacked_widget.setCurrentWidget(self.main_window.return_pg)
+        self.main_window.borrow_page.loadreturnpage(self.recognized_user_id)
+        self.main_window.stacked_widget.setCurrentWidget(self.main_window.return_page)
 
     def navigate_to_borrow_pg(self):
         # Navigate to the borrow page
-        self.main_window.stacked_widget.setCurrentWidget(self.main_window.borrow_pg)
-
+        self.main_window.borrow_page.loadborrowpage(self.recognized_user_id)
+        self.main_window.stacked_widget.setCurrentWidget(self.main_window.borrow_page)
+        
     def clear_fields(self):
         # Clear all fields when face recognition fails
         self.rname.setText("Waiting for face scan...")
