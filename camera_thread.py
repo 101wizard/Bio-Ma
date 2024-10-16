@@ -7,6 +7,7 @@ class CameraThread(QThread):
     def __init__(self):
         super().__init__()
         self.running = True
+        self.signal_connected = False
 
     def run(self):
         cap = cv2.VideoCapture(1)

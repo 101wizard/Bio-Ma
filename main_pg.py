@@ -27,6 +27,13 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("BIO-MA")
         self.setGeometry(100, 100, 1200, 800)
 
+        # Track the current signal handler
+        self.current_signal_handler = None
+        self.current_signal_page = ''
+
+        self.camera_thread = CameraThread()
+        self.camera_thread.start()
+
         # Create the main layout
         main_widget = QWidget()
         main_layout = QHBoxLayout()
@@ -82,20 +89,20 @@ class MainWindow(QMainWindow):
         self.side_nav_bar.add_user_selected.connect(self.show_add_user)
         self.side_nav_bar.profile_selected.connect(self.show_profile)
         self.side_nav_bar.logout_selected.connect(self.logout)
-
-        self.camera_thread = CameraThread()
-        self.camera_thread.start()
         
         # Show the dashboard page by default
         self.show_dashboard()
 
     def show_dashboard(self):
+        self.clear_camera_connections()
+        self.camera_thread.frameCaptured.disconnect()
         self.stacked_widget.setCurrentWidget(self.dashboard_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Dashboard"))
         self.side_nav_bar.add_equipment_btn.hide()
         self.side_nav_bar.add_user_btn.hide()
 
     def show_equipment(self):
+        self.clear_camera_connections()
         self.equipment_page.load_equipment_pg()
         self.stacked_widget.setCurrentWidget(self.equipment_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Equipment"))
@@ -103,11 +110,13 @@ class MainWindow(QMainWindow):
         self.side_nav_bar.add_user_btn.hide()
 
     def show_add_equipment(self):
+        self.clear_camera_connections()
         self.add_equipment_page.loadaddequipment()
         self.stacked_widget.setCurrentWidget(self.add_equipment_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Add Equipment"))
 
     def show_user(self):
+        self.clear_camera_connections()
         self.user_page.load_user_pg()
         self.stacked_widget.setCurrentWidget(self.user_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "User"))
@@ -115,18 +124,30 @@ class MainWindow(QMainWindow):
         self.side_nav_bar.add_equipment_btn.hide()
 
     def show_add_user(self):
+        self.clear_camera_connections()
         self.add_user_page.loadadduser()
         self.stacked_widget.setCurrentWidget(self.add_user_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Add User"))
 
     def show_profile(self):
+        self.clear_camera_connections()
         self.user_details.update_content(user_id=self.uid, title="Profile")
         self.stacked_widget.setCurrentWidget(self.user_details)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Profile"))
         self.side_nav_bar.add_equipment_btn.hide()
         self.side_nav_bar.add_user_btn.hide()
 
+    def clear_camera_connections(self):
+        if self.current_signal_handler:
+            self.camera_thread.frameCaptured.disconnect(self.current_signal_handler)
+        if self.current_signal_page == 'B':
+            self.borrow_page.unloadborrowpage()
+        elif self.current_signal_page == 'R':
+            self.return_page.unloadreturnpage()
+        self.current_signal_handler = None
+
     def logout(self):
+        self.camera_thread.stop()
         self.close()  # Close the main window
         self.login_page = LoginPage()  # Show the login page again
         self.login_page.show()

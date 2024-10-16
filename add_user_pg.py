@@ -40,10 +40,6 @@ class AddUserPage(QWidget):
         self.user_image.setStyleSheet("border:1px solid #ffffff")
         self.user_image.setAlignment(Qt.AlignCenter)
 
-        self.main_window.camera_thread.stop()
-        self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
-        self.main_window.camera_thread.start()
-
         # Add image to GridLayout in row 0, column 0 (spanning rows)
         self.details_layout.addWidget(self.user_image, 0, 0, 6, 1, Qt.AlignmentFlag.AlignLeft)
 
@@ -129,6 +125,8 @@ class AddUserPage(QWidget):
         self.a_upassword.setText('')
         self.a_uphone.setText('')
         self.a_uconfirm_password.setText('')
+        self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
+        self.main_window.current_signal_handler = self.update_camera_display
         try:
             connection = mysql.connector.connect(
                 host="localhost",

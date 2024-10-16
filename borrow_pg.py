@@ -36,9 +36,6 @@ class BorrowPage(QWidget):
         self.user_image.setStyleSheet("border:1px solid #ffffff")
         self.user_image.setAlignment(Qt.AlignCenter)
 
-        #self.camera_thread = CameraThread()
-        self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
-
         # Add image to GridLayout in row 0, column 0 (spanning rows)
         self.details_layout.addWidget(self.user_image, 0, 0, 6, 1, Qt.AlignmentFlag.AlignLeft)
 
@@ -91,10 +88,18 @@ class BorrowPage(QWidget):
         # Timer for continuous face recognition
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.recognize_and_update_details)
-        self.timer.start(1000)  # Trigger every second for face detection
 
     def loadborrowpage(self):
         self.clear_fields()
+        self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
+        self.main_window.current_signal_handler = self.update_camera_display
+        self.main_window.current_signal_page = 'B'
+        self.timer.start(1000)
+
+    def unloadborrowpage(self):
+        self.timer.stop()
+        self.main_window.current_signal_page = ''
+
 
     def recognize_and_update_details(self):
         if hasattr(self, 'current_frame'):
