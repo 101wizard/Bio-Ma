@@ -118,6 +118,7 @@ class BorrowReturnLoadPage(QWidget):
         self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
         self.main_window.current_signal_handler = self.update_camera_display
         self.current_page = action
+        self.confirm_button.setEnabled(False)
         self.title_label.setText(action)
 
     def scan_for_user(self):
@@ -144,6 +145,7 @@ class BorrowReturnLoadPage(QWidget):
             else:
                 # Clear the fields if no face is recognized
                 self.clear_fields()
+                self.confirm_button.setEnabled(False)
                 QMessageBox.warning(self, "Error", "No face detected or unknown user.")
 
     def recognize_face(self, frame):
