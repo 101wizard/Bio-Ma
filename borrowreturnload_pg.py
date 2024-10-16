@@ -81,13 +81,24 @@ class BorrowReturnLoadPage(QWidget):
         self.scan_button.setFixedWidth(160)
         self.scan_button.clicked.connect(self.scan_for_user)
         self.scan_button.setStyleSheet("background-color: #ffffff; color:#000000; font-size: 16px; padding: 10px; border-radius: 5px;")
-        self.details_layout.addWidget(self.scan_button, 5, 2, Qt.AlignmentFlag.AlignCenter)
+        self.details_layout.addWidget(self.scan_button, 5, 1, Qt.AlignmentFlag.AlignCenter)
 
         # Confirm button
         self.confirm_button = QPushButton("Confirm")
         self.confirm_button.setFixedWidth(160)
-        self.confirm_button.setVisible(False)  # Initially hidden
-        self.confirm_button.setStyleSheet("background-color: #ffffff; color:#000000; font-size: 16px; padding: 10px; border-radius: 5px;")
+        self.confirm_button.setEnabled(False) # Initially hidden
+        self.confirm_button.setStyleSheet("""QPushButton {
+                                            background-color: #ffffff;
+                                            color: #000000;
+                                            font-size: 16px;
+                                            padding: 10px;
+                                            border-radius: 5px;
+                                        }
+                                        QPushButton:disabled {
+                                            background-color: #cccccc;
+                                            color: #888888; 
+                                            border: 1px solid #aaaaaa;  
+                                        }""")
         self.details_layout.addWidget(self.confirm_button, 5, 2, Qt.AlignmentFlag.AlignCenter)
 
 
@@ -262,10 +273,10 @@ class BorrowReturnLoadPage(QWidget):
             pending_return = cursor.fetchone()[0] > 0
 
             if pending_return:
-                self.confirm_button.setVisible(True)
+                self.confirm_button.setEnabled(True)
                 self.confirm_button.clicked.connect(self.navigate_to_return_pg)
             else:
-                self.confirm_button.setVisible(False)
+                self.confirm_button.setEnabled(False)
 
         except mysql.connector.Error as e:
             QMessageBox.warning(self, "Database Error", f"An error occurred while fetching data: {e}")
@@ -290,7 +301,6 @@ class BorrowReturnLoadPage(QWidget):
                 self.confirm_button.setEnabled(False)
             else:
                 self.confirm_button.setEnabled(True)
-            self.confirm_button.setVisible(True)
             self.confirm_button.clicked.connect(self.navigate_to_borrow_pg)
 
         except mysql.connector.Error as e:
