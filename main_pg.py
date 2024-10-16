@@ -10,6 +10,7 @@ from user_pg import UserPage
 from UserFrameTemplate import UserFrameTemplate
 from add_user_pg import AddUserPage
 
+from borrowreturnload_pg import BorrowReturnLoadPage
 from borrow_pg import BorrowPage
 from return_pg import ReturnPage
 
@@ -60,6 +61,7 @@ class MainWindow(QMainWindow):
         self.user_details = UserFrameTemplate(self)
         self.add_user_page = AddUserPage(self)
 
+        self.borrowreturnload_page = BorrowReturnLoadPage(self)
         self.return_page = ReturnPage(self)
         self.borrow_page = BorrowPage(self)
 
@@ -75,6 +77,7 @@ class MainWindow(QMainWindow):
         self.stacked_widget.addWidget(self.user_details)
         self.stacked_widget.addWidget(self.add_user_page)
 
+        self.stacked_widget.addWidget(self.borrowreturnload_page)
         self.stacked_widget.addWidget(self.return_page)
         self.stacked_widget.addWidget(self.borrow_page)
 
