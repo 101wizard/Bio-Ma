@@ -44,7 +44,7 @@ class BorrowPage(QWidget):
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
     def loadborrowpage(self, id):
-        self.label.setText("Name:"+(self.user_id))
+        self.label.setText(f"Name: R{id:04d}")
         self.user_id = id
 
     def clear_fields(self):

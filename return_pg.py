@@ -43,8 +43,8 @@ class ReturnPage(QWidget):
         main_layout.addWidget(widget)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-    def loadreturnpage(self):
-        self.label.setText("Name:"+(self.user_id))
+    def loadreturnpage(self, id):
+        self.label.setText(f"Name: R{id:04d}")
         self.user_id = id
 
     def clear_fields(self):
