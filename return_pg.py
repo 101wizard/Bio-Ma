@@ -67,12 +67,12 @@ class ReturnPage(QWidget):
         self.details_layout.addWidget(email_label, 3, 1, Qt.AlignmentFlag.AlignVCenter)
         self.details_layout.addWidget(self.remail, 3, 2, Qt.AlignmentFlag.AlignVCenter)
 
-        # Print button
-        self.print_button = QPushButton("Print Detected ID")
-        self.print_button.setFixedWidth(160)
-        self.print_button.clicked.connect(self.print_detected_id)
-        self.print_button.setStyleSheet("background-color: #ffffff; font-size: 16px; padding: 10px; border-radius: 5px;")
-        self.details_layout.addWidget(self.print_button, 4, 2, Qt.AlignmentFlag.AlignCenter)
+        # Scan button (formerly "Print Detected ID")
+        self.scan_button = QPushButton("Scan")
+        self.scan_button.setFixedWidth(160)
+        self.scan_button.clicked.connect(self.scan_for_user)
+        self.scan_button.setStyleSheet("background-color: #ffffff; font-size: 16px; padding: 10px; border-radius: 5px;")
+        self.details_layout.addWidget(self.scan_button, 4, 2, Qt.AlignmentFlag.AlignCenter)
 
         # Add the GridLayout to the main layout
         layout.addLayout(self.details_layout)
@@ -85,23 +85,12 @@ class ReturnPage(QWidget):
         main_layout.addWidget(widget)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Timer for continuous face recognition
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.recognize_and_update_details)
-        self.timer.start(1000)  # Trigger every second for face detection
-
     def loadreturnpage(self):
         self.clear_fields()
         self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
         self.main_window.current_signal_handler = self.update_camera_display
-        self.main_window.current_signal_page = 'R'
-        self.timer.start(1000)
 
-    def unloadreturnpage(self):
-        self.timer.stop()
-        self.main_window.current_signal_page = ''
-
-    def recognize_and_update_details(self):
+    def scan_for_user(self):
         if hasattr(self, 'current_frame'):
             recognized_user = self.recognize_face(self.current_frame)
 
@@ -111,9 +100,65 @@ class ReturnPage(QWidget):
 
                 # Fetch researcher details from the database
                 self.fetch_researcher_details(recognized_user)
+                
+                # Print the recognized user ID
+                print(f"Detected Researcher ID: {self.recognized_user_id}")
             else:
                 # Clear the fields if no face is recognized
                 self.clear_fields()
+                QMessageBox.warning(self, "Error", "No face detected or unknown user.")
+
+    def recognize_face(self, frame):
+        try:
+            # Connect to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # Query to get all face encodings from the database (stored as BLOB)
+            query = "SELECT r_id, r_img FROM researcher"
+            cursor.execute(query)
+
+            known_face_encodings = []
+            known_face_ids = []
+
+            for (la_id, la_img) in cursor.fetchall():
+                # Convert the BLOB data (base64 string) back to an image
+                img_data = base64.b64decode(la_img)  # Decode base64 to bytes
+                np_array = np.frombuffer(img_data, np.uint8)  # Convert bytes to numpy array
+                img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)  # Decode image to OpenCV format
+
+                # Get the face encoding from the image
+                face_encoding = face_recognition.face_encodings(img)[0]  # Assuming one face per image
+                known_face_encodings.append(face_encoding)
+                known_face_ids.append(la_id)
+
+            # Ensure the current frame contains at least one face
+            if len(face_recognition.face_encodings(frame)) > 0:
+                unknown_face_encoding = face_recognition.face_encodings(frame)[0]
+
+                # Compare the captured face with known faces from the database
+                matches = face_recognition.compare_faces(known_face_encodings, unknown_face_encoding)
+
+                if True in matches:
+                    # Return the ID of the first matched face in the format LAxxxx
+                    match_index = matches.index(True)
+                    return known_face_ids[match_index]
+                else:
+                    return 'unknown_person'
+            else:
+                return 'no_persons_found'
+
+        except mysql.connector.Error as e:
+            QMessageBox.warning(self, "Database Error", f"An error occurred while fetching data: {e}")
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
 
     def fetch_researcher_details(self, researcher_id):
         try:
@@ -168,62 +213,5 @@ class ReturnPage(QWidget):
             # Save the current frame for future face recognition
             self.current_frame = frame
 
-    def recognize_face(self, frame):
-        try:
-            # Connect to the database
-            connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="",
-                database="test"
-            )
-            cursor = connection.cursor()
-
-            # Query to get all face encodings from the database (stored as BLOB)
-            query = "SELECT r_id, r_img FROM researcher"
-            cursor.execute(query)
-
-            known_face_encodings = []
-            known_face_ids = []
-
-            for (la_id, la_img) in cursor.fetchall():
-                # Convert the BLOB data (base64 string) back to an image
-                img_data = base64.b64decode(la_img)  # Decode base64 to bytes
-                np_array = np.frombuffer(img_data, np.uint8)  # Convert bytes to numpy array
-                img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)  # Decode image to OpenCV format
-
-                # Get the face encoding from the image
-                face_encoding = face_recognition.face_encodings(img)[0]  # Assuming one face per image
-                known_face_encodings.append(face_encoding)
-                known_face_ids.append(la_id)
-
-            # Ensure the current frame contains at least one face
-            if len(face_recognition.face_encodings(frame)) > 0:
-                unknown_face_encoding = face_recognition.face_encodings(frame)[0]
-
-                # Compare the captured face with known faces from the database
-                matches = face_recognition.compare_faces(known_face_encodings, unknown_face_encoding)
-
-                if True in matches:
-                    # Return the ID of the first matched face in the format LAxxxx
-                    match_index = matches.index(True)
-                    return known_face_ids[match_index]
-                else:
-                    return 'unknown_person'
-            else:
-                return 'no_persons_found'
-
-        except mysql.connector.Error as e:
-            QMessageBox.warning(self, "Database Error", f"An error occurred while fetching data: {e}")
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-
-    def print_detected_id(self):
-        if self.recognized_user_id:
-            print(f"Detected Researcher ID: {self.recognized_user_id}")
-        else:
-            QMessageBox.warning(self, "Error", "No researcher detected.")
 
         

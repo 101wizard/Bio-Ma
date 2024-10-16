@@ -29,7 +29,6 @@ class MainWindow(QMainWindow):
 
         # Track the current signal handler
         self.current_signal_handler = None
-        self.current_signal_page = ''
 
         self.camera_thread = CameraThread()
         self.camera_thread.start()
@@ -95,7 +94,6 @@ class MainWindow(QMainWindow):
 
     def show_dashboard(self):
         self.clear_camera_connections()
-        self.camera_thread.frameCaptured.disconnect()
         self.stacked_widget.setCurrentWidget(self.dashboard_page)
         self.side_nav_bar.move_indicator(self.side_nav_bar.findChild(QWidget, "Dashboard"))
         self.side_nav_bar.add_equipment_btn.hide()
@@ -138,12 +136,8 @@ class MainWindow(QMainWindow):
         self.side_nav_bar.add_user_btn.hide()
 
     def clear_camera_connections(self):
-        if self.current_signal_handler:
+        if self.current_signal_handler != None:
             self.camera_thread.frameCaptured.disconnect(self.current_signal_handler)
-        if self.current_signal_page == 'B':
-            self.borrow_page.unloadborrowpage()
-        elif self.current_signal_page == 'R':
-            self.return_page.unloadreturnpage()
         self.current_signal_handler = None
 
     def logout(self):

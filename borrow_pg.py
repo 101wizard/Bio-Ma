@@ -67,12 +67,12 @@ class BorrowPage(QWidget):
         self.details_layout.addWidget(email_label, 3, 1, Qt.AlignmentFlag.AlignVCenter)
         self.details_layout.addWidget(self.remail, 3, 2, Qt.AlignmentFlag.AlignVCenter)
 
-        # Print button
-        self.print_button = QPushButton("Print Detected ID")
-        self.print_button.setFixedWidth(160)
-        self.print_button.clicked.connect(self.print_detected_id)
-        self.print_button.setStyleSheet("background-color: #ffffff; font-size: 16px; padding: 10px; border-radius: 5px;")
-        self.details_layout.addWidget(self.print_button, 4, 2, Qt.AlignmentFlag.AlignCenter)
+        # Scan button (formerly "Print Detected ID")
+        self.scan_button = QPushButton("Scan")
+        self.scan_button.setFixedWidth(160)
+        self.scan_button.clicked.connect(self.scan_for_user)
+        self.scan_button.setStyleSheet("background-color: #ffffff; font-size: 16px; padding: 10px; border-radius: 5px;")
+        self.details_layout.addWidget(self.scan_button, 4, 2, Qt.AlignmentFlag.AlignCenter)
 
         # Add the GridLayout to the main layout
         layout.addLayout(self.details_layout)
@@ -85,23 +85,12 @@ class BorrowPage(QWidget):
         main_layout.addWidget(widget)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Timer for continuous face recognition
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.recognize_and_update_details)
-
     def loadborrowpage(self):
         self.clear_fields()
         self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
         self.main_window.current_signal_handler = self.update_camera_display
-        self.main_window.current_signal_page = 'B'
-        self.timer.start(1000)
 
-    def unloadborrowpage(self):
-        self.timer.stop()
-        self.main_window.current_signal_page = ''
-
-
-    def recognize_and_update_details(self):
+    def scan_for_user(self):
         if hasattr(self, 'current_frame'):
             recognized_user = self.recognize_face(self.current_frame)
 
@@ -111,62 +100,13 @@ class BorrowPage(QWidget):
 
                 # Fetch researcher details from the database
                 self.fetch_researcher_details(recognized_user)
+                
+                # Print the recognized user ID
+                print(f"Detected Researcher ID: {self.recognized_user_id}")
             else:
                 # Clear the fields if no face is recognized
                 self.clear_fields()
-
-    def fetch_researcher_details(self, researcher_id):
-        try:
-            # Connect to the database
-            connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="",
-                database="test"
-            )
-            cursor = connection.cursor()
-
-            # Query to get researcher details from the database
-            query = "SELECT r_id, r_name, r_phone, r_email FROM researcher WHERE r_id = %s"
-            cursor.execute(query, (researcher_id,))
-            result = cursor.fetchone()
-
-            if result:
-                r_id, r_name, r_phone, r_email = result
-                # Update the fields
-                self.rid.setText(f"R{r_id:04d}")
-                self.rname.setText(r_name)
-                self.rphone.setText(r_phone)
-                self.remail.setText(r_email)
-            else:
-                # Clear the fields if no matching record is found
-                self.clear_fields()
-
-        except mysql.connector.Error as e:
-            QMessageBox.warning(self, "Database Error", f"An error occurred while fetching data: {e}")
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-
-    def clear_fields(self):
-        # Clear all fields when face recognition fails
-        self.rname.setText("Waiting for face scan...")
-        self.rid.setText("R0000")
-        self.rphone.setText("Waiting for face scan...")
-        self.remail.setText("Waiting for face scan...")
-
-    def update_camera_display(self, frame):
-        if frame is not None:
-            # Convert the frame to RGB format for Qt
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            height, width, channel = frame.shape
-            step = channel * width
-            qImg = QImage(frame.data, width, height, step, QImage.Format_RGB888)
-            self.user_image.setPixmap(QPixmap.fromImage(qImg))
-
-            # Save the current frame for future face recognition
-            self.current_frame = frame
+                QMessageBox.warning(self, "Error", "No face detected or unknown user.")
 
     def recognize_face(self, frame):
         try:
@@ -220,8 +160,55 @@ class BorrowPage(QWidget):
                 cursor.close()
                 connection.close()
 
-    def print_detected_id(self):
-        if self.recognized_user_id:
-            print(f"Detected Researcher ID: {self.recognized_user_id}")
-        else:
-            QMessageBox.warning(self, "Error", "No researcher detected.")
+    def fetch_researcher_details(self, researcher_id):
+        try:
+            # Connect to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # Query to get researcher details from the database
+            query = "SELECT r_id, r_name, r_phone, r_email FROM researcher WHERE r_id = %s"
+            cursor.execute(query, (researcher_id,))
+            result = cursor.fetchone()
+
+            if result:
+                r_id, r_name, r_phone, r_email = result
+                # Update the fields
+                self.rid.setText(f"R{r_id:04d}")
+                self.rname.setText(r_name)
+                self.rphone.setText(r_phone)
+                self.remail.setText(r_email)
+            else:
+                # Clear the fields if no matching record is found
+                self.clear_fields()
+
+        except mysql.connector.Error as e:
+            QMessageBox.warning(self, "Database Error", f"An error occurred while fetching data: {e}")
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+    def clear_fields(self):
+        # Clear all fields when face recognition fails
+        self.rname.setText("Waiting for face scan...")
+        self.rid.setText("R0000")
+        self.rphone.setText("Waiting for face scan...")
+        self.remail.setText("Waiting for face scan...")
+
+    def update_camera_display(self, frame):
+        if frame is not None:
+            # Convert the frame to RGB format for Qt
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            height, width, channel = frame.shape
+            step = channel * width
+            qImg = QImage(frame.data, width, height, step, QImage.Format_RGB888)
+            self.user_image.setPixmap(QPixmap.fromImage(qImg))
+
+            # Save the current frame for future face recognition
+            self.current_frame = frame
