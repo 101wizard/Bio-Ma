@@ -170,14 +170,14 @@ class UserFrameTemplate(QWidget):
         # If entity is lab assistant or researcher or profile based on entity
         try:
             # Step 1: Format user_id based on the entity
-            if entity == 'Lab Assistant':
+            if entity == 'User : Lab Assistant':
                 formatted_user_id = int(user_id[2:])  # Convert LA0001 -> 1
                 query = """
                     SELECT borrow_id, r_id, due_date
                     FROM borrow
                     WHERE la_id = %s
                 """
-            elif entity == 'Researcher':
+            elif entity == 'User : Researcher':
                 formatted_user_id = int(user_id[1:])  # Convert R0001 -> 1
                 query = """
                     SELECT borrow_id, la_id, due_date
