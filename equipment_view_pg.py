@@ -171,17 +171,48 @@ class EquipmentViewPage(QWidget):
         self.content_layout = layout
 
     def fetch_borrow_list(self, equipment_id):
-        borrow_list = [
-            (1,1,'DD/MM/YY',10),
-            (2,2,'DD/MM/YY',3),
-            (3,4,'DD/MM/YY',5),
-            (5,5,'DD/MM/YY',6),
-            (6,6,'DD/MM/YY',2),
-            (7,7,'DD/MM/YY',3)
-        ]
+        # Format the equipment_id (assuming it's in the format "E0001", strip the "E" and convert to int)
+        formatted_e_id = int(equipment_id[1:])
+        
+        try:
+            # Establish a connection to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
 
-        return borrow_list
-    
+            # SQL query to fetch the borrow list
+            query_borrowed_equipment = """
+            SELECT be.borrow_id, b.r_id, b.due_date, be.amount
+            FROM borrowed_equipment AS be
+            JOIN borrow AS b ON be.borrow_id = b.borrow_id
+            WHERE be.e_id = %s
+            """
+
+            # Execute the query using the formatted equipment ID
+            cursor.execute(query_borrowed_equipment, (formatted_e_id,))
+            result = cursor.fetchall()
+
+            # Convert result into the required format
+            # borrow_list = [(borrow_id, borrower_id, due_date, amount), ...]
+            borrow_list = [(row[0], row[1], row[2].strftime("%d/%m/%Y"), row[3]) for row in result]
+
+            return borrow_list
+
+        except mysql.connector.Error as e:
+            print(f"An error occurred while fetching equipment content: {e}")
+            # Return a default error message with the equipment_id if something goes wrong
+            return [(equipment_id, "Error", "", 0)]
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+        
     def populate_borrow_list(self,borrow_list):
         # Clear existing equipment items
         while self.borrow_layout.count() > 0: 

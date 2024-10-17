@@ -297,7 +297,7 @@ class BorrowReturnLoadPage(QWidget):
             cursor.execute(query, (researcher_id,))
             borrow_due_dates = cursor.fetchall()
 
-            has_overdue = any(due_date < datetime.now() for due_date, in borrow_due_dates)
+            has_overdue = any(due_date < datetime.datetime.now() for due_date, in borrow_due_dates)
 
             if has_overdue:
                 self.confirm_button.setEnabled(False)

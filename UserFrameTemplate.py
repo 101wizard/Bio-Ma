@@ -212,19 +212,6 @@ class UserFrameTemplate(QWidget):
             if connection.is_connected():
                 cursor.close()
                 connection.close()
-
-        """print(user_id)
-        print(entity)
-        borrow_list = [
-            (1,1,'DD/MM/YY'),
-            (2,2,'DD/MM/YY'),
-            (3,4,'DD/MM/YY'),
-            (5,5,'DD/MM/YY'),
-            (6,6,'DD/MM/YY'),
-            (7,7,'DD/MM/YY')
-        ]
-
-        return borrow_list"""
     
     def populate_borrow_list(self, borrow_list, title):
         # Clear existing equipment items

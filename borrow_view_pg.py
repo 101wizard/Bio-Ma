@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QPainter
 import qtawesome as qta 
+import mysql.connector
 
 class BorrowViewPage(QWidget):
     def __init__(self, main_window):
@@ -248,13 +249,67 @@ class BorrowViewPage(QWidget):
         self.b_vborrower_id.clicked.connect(lambda: self.show_view_borrower(f"R{borrow_content[1]:04d}"))
         self.b_vapprover_id.clicked.connect(lambda: self.show_view_approver(f"LA{borrow_content[2]:04d}"))
 
-        self.borrow_date.setText(borrow_content[3])
-        self.due_date.setText   (borrow_content[4])
+         # Format the borrow_date and due_date as strings
+        borrow_date_str = borrow_content[3].strftime("%d/%m/%Y")  # Format the date as DD/MM/YYYY
+        due_date_str = borrow_content[4].strftime("%d/%m/%Y")     # Format the date as DD/MM/YYYY
+
+        # Set the text of the QLabel widgets with the formatted string
+        self.borrow_date.setText(borrow_date_str)
+        self.due_date.setText   (due_date_str)
 
         self.populate_b_vequipment_list(equipment_list)
 
     def fetch_content(self, borrow_id):
-        borrow_content = (borrow_id,1,2,"DD/MM/YY","DD/MM/YYYY")
-        equipment_list = [(1,3,"Flask"),(2,4,"Burner"),(6,1,"Pipette")]
-        #query
-        return borrow_content, equipment_list
+        try:
+            formatted_borrow_id = int(borrow_id[1:])
+            print(f"Fetching content for borrow_id: {formatted_borrow_id}")
+
+            # Step 2: Connect to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # Step 3: Fetch borrow content from 'borrow' table
+            borrow_query = """
+                SELECT borrow_id, r_id, la_id, borrow_date, due_date
+                FROM borrow
+                WHERE borrow_id = %s
+            """
+            cursor.execute(borrow_query, (formatted_borrow_id,))
+            borrow_content = cursor.fetchone()
+
+            if not borrow_content:
+                print(f"No borrow record found for borrow_id: {formatted_borrow_id}")
+                return None, []
+
+            # Step 4: Fetch equipment list from 'borrowed_equipment' and 'equipment' tables
+            equipment_query = """
+                SELECT be.e_id, be.amount, e.e_name
+                FROM borrowed_equipment be
+                JOIN equipment e ON be.e_id = e.e_id
+                WHERE be.borrow_id = %s
+            """
+            cursor.execute(equipment_query, (formatted_borrow_id,))
+            equipment_list = cursor.fetchall()
+
+            # Step 5: Process the equipment list into (e_id, amount, e_name) format
+            processed_equipment_list = [
+                (e_id, amount, e_name)
+                for e_id, amount, e_name in equipment_list
+            ]
+
+            # Return borrow content and processed equipment list
+            return borrow_content, processed_equipment_list
+
+        except mysql.connector.Error as e:
+            print(f"Database error while fetching content: {e}")
+            return None, []
+
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
