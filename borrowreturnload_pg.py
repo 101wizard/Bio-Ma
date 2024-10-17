@@ -248,7 +248,7 @@ class BorrowReturnLoadPage(QWidget):
                 borrow_info = ""
                 for borrow_id, due_date in borrow_details:
                     formatted_date = due_date.strftime('%Y-%m-%d')
-                    overdue = due_date < datetime.now()
+                    overdue = due_date < datetime.datetime.now()
                     if overdue:
                         borrow_info += f"<span style='color: red;'>Borrow ID {borrow_id} - Due {formatted_date}</span><br>"
                     else:
@@ -314,7 +314,7 @@ class BorrowReturnLoadPage(QWidget):
 
     def navigate_to_return_pg(self):
         # Navigate to the return page
-        self.main_window.borrow_page.loadreturnpage(self.recognized_user_id)
+        self.main_window.return_page.loadreturnpage(self.recognized_user_id)
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.return_page)
 
     def navigate_to_borrow_pg(self):

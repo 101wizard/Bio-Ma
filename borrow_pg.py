@@ -1,11 +1,12 @@
 import sys
-from PySide6.QtWidgets import  QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QScrollArea,QFrame, QSpacerItem, QSizePolicy, QLineEdit
+from PySide6.QtWidgets import  QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QScrollArea,QFrame, QSpacerItem, QSizePolicy, QLineEdit, QMessageBox
 from PySide6.QtCore import Qt, QByteArray, QRect
 from PySide6.QtGui import QImage, QPixmap, QPainter, QIntValidator
 import qtawesome as qta 
 import base64
 import mysql.connector
 import numpy as np
+import datetime
 
 class BorrowPage(QWidget):
     def __init__(self, main_window):
@@ -247,8 +248,93 @@ class BorrowPage(QWidget):
             amount_field.setText(str(current_value + 1))
 
     def confirm_selection(self):
-        for eid, qty in self.selected_amounts.items():
-            print(f"{eid}: {qty}")
+        # Filter selected items (amount > 0)
+        selected_items = {
+            eid: field.text() if isinstance(field, QLineEdit) else field
+            for eid, field in self.selected_amounts.items()
+            if (isinstance(field, QLineEdit) and int(field.text()) > 0) or (isinstance(field, str) and field.isdigit() and int(field) > 0)
+        }
+
+        if not selected_items:
+            print("No equipment selected to borrow.")
+            return
+        
+        try:
+            # Step 1: Connect to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # Step 2: Insert into the 'borrow' table
+            r_id = self.user_id  # Researcher ID
+            la_id = int(self.main_window.uid[2:])  # Lab assistant ID
+            borrow_date = datetime.datetime.now()
+            due_date = borrow_date + datetime.timedelta(days=7)
+
+            # Prepare the query for the 'borrow' table
+            query = """
+                INSERT INTO borrow (r_id, la_id, borrow_date, due_date)
+                VALUES (%s, %s, %s, %s)
+            """
+            values = (r_id, la_id, borrow_date, due_date)
+            
+            # Execute the query
+            cursor.execute(query, values)
+            connection.commit()  # Commit the transaction to the database
+
+            # Get the auto-incremented borrow_id
+            borrow_id = cursor.lastrowid
+            if not borrow_id:
+                print("Failed to retrieve borrow ID after insertion.")
+                return
+
+            print(f"New borrow record created with borrow_id: {borrow_id}")
+
+            # Step 3: Insert into the 'borrowed_equipment' table
+            for eid, amount in selected_items.items():
+                # Prepare the query for the 'borrowed_equipment' table
+                query = """
+                    INSERT INTO borrowed_equipment (borrow_id, e_id, amount)
+                    VALUES (%s, %s, %s)
+                """
+                values = (borrow_id, int(eid[1:]), int(amount))  # Ensure amount is stored as an integer
+                
+                # Execute the query
+                cursor.execute(query, values)
+                connection.commit() 
+
+                print(f"Equipment {eid} with amount {amount} added to 'borrowed_equipment'.")
+
+                # Step 4: Update the equipment count in the 'equipment' table (reduce e_curr_amount)
+                update_query = """
+                    UPDATE equipment 
+                    SET e_curr_amount = e_curr_amount - %s
+                    WHERE e_id = %s
+                """
+                update_values = (int(amount), int(eid[1:]))
+
+                cursor.execute(update_query, update_values)
+                connection.commit() 
+
+                print("Borrow transaction completed successfully.")
+
+        except mysql.connector.Error as e:
+            # Handle database errors
+            QMessageBox.warning(self, "Database Error", f"An error occurred while processing the transaction: {e}")
+            print(f"Error: {e}")
+            return
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+        self.main_window.show_dashboard()
 
     def get_default_image(self):
         # Create a default image using a Qt Awesome icon

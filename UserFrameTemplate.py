@@ -168,6 +168,53 @@ class UserFrameTemplate(QWidget):
 
     def fetch_borrow_list(self, user_id, entity):
         # If entity is lab assistant or researcher or profile based on entity
+        try:
+            # Step 1: Format user_id based on the entity
+            if entity == 'Lab Assistant':
+                formatted_user_id = int(user_id[2:])  # Convert LA0001 -> 1
+                query = """
+                    SELECT borrow_id, r_id, due_date
+                    FROM borrow
+                    WHERE la_id = %s
+                """
+            elif entity == 'Researcher':
+                formatted_user_id = int(user_id[1:])  # Convert R0001 -> 1
+                query = """
+                    SELECT borrow_id, la_id, due_date
+                    FROM borrow
+                    WHERE r_id = %s
+                """
+            else:
+                print("Invalid entity type.")
+                return []
+
+            # Step 2: Connect to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # Step 3: Execute the query and fetch data
+            cursor.execute(query, (formatted_user_id,))
+            borrow_list = cursor.fetchall()
+
+            # Step 4: Return the borrow list (format: borrow_id, r_id/la_id, due_date)
+            return borrow_list
+
+        except mysql.connector.Error as e:
+            print(f"Error fetching borrow list: {e}")
+            return []
+        
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+        """print(user_id)
+        print(entity)
         borrow_list = [
             (1,1,'DD/MM/YY'),
             (2,2,'DD/MM/YY'),
@@ -177,7 +224,7 @@ class UserFrameTemplate(QWidget):
             (7,7,'DD/MM/YY')
         ]
 
-        return borrow_list
+        return borrow_list"""
     
     def populate_borrow_list(self, borrow_list, title):
         # Clear existing equipment items

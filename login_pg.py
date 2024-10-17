@@ -200,7 +200,7 @@ class LoginPage(QWidget):
                 connection.close()
 
     def spoof_detection(self, frame):
-        model_dir = 'C:/Users/ASUS/Desktop/Bio-Ma/resources/anti_spoof_models'
+        model_dir = 'C:/Users/JQgam/Desktop/Bio-Ma/resources/anti_spoof_models'
         model_test = AntiSpoofPredict(0)
         image_cropper = CropImage()
 
