@@ -193,7 +193,7 @@ class LoginPage(QWidget):
                 if uid == 'admin':
                     if password == '123456':
                         self.camera_thread.stop()
-                        self.main_window = MainWindow(uid)
+                        self.main_window = MainWindow('LA0001')
                         self.main_window.show()
                         self.close()
                     else:
