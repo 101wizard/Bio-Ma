@@ -290,9 +290,13 @@ class UserFrameTemplate(QWidget):
         self.user_image.setStyleSheet("""border:1px solid #ffffff""")
         self.user_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        image_data = QByteArray.fromBase64(content[4])
-        pixmap = QPixmap(QImage.fromData(image_data))
-        self.set_rounded_pixmap(self.user_image,pixmap)
+        if content[4] != '':
+            image_data = QByteArray.fromBase64(content[4])
+            pixmap = QPixmap(QImage.fromData(image_data))
+            self.set_rounded_pixmap(self.user_image,pixmap)
+        else:
+            pixmap = self.get_default_image()
+            self.user_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio)) 
 
         self.u_vname.setText (content[1])
         self.u_vid.setText   (content[0])
@@ -371,6 +375,16 @@ class UserFrameTemplate(QWidget):
             if connection.is_connected():
                 cursor.close()
                 connection.close()
+
+    def get_default_image(self):
+        # Create a default image using a Qt Awesome icon
+        icon = qta.icon('fa.file-image-o', color='white')  # Use Qt Awesome icon
+        pixmap = QPixmap(180, 180)
+        pixmap.fill(Qt.transparent)  # Fill with transparent background
+        painter = QPainter(pixmap)
+        icon.paint(painter, pixmap.rect())
+        painter.end()
+        return pixmap
 
     def set_rounded_pixmap(self, label, pixmap):
         rounded_pixmap = pixmap.scaled(label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)

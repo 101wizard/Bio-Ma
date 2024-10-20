@@ -22,7 +22,6 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.uid = uid
-        print(f"Logged in with UID: {self.uid}")
 
         # Main window settingsw
         self.setWindowTitle("BIO-MA")
