@@ -307,9 +307,14 @@ class EquipmentViewPage(QWidget):
 
         self.populate_borrow_list(self.fetch_borrow_list(equipment_id))
 
-        self.e_vsave.hide()
-        self.e_vedit.show()
-        self.e_vremove.show()
+        if self.main_window.uid == "LA0001":
+            self.e_vsave.hide()
+            self.e_vedit.show()
+            self.e_vremove.show()
+        else:
+            self.e_vsave.hide()
+            self.e_vedit.hide()
+            self.e_vremove.hide()
 
     def fetch_content(self, equipment_id):
         try:
