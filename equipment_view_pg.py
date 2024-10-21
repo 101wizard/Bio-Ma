@@ -1,10 +1,11 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QGridLayout,
-    QFrame, QSpacerItem, QSizePolicy, QLineEdit
+    QFrame, QSpacerItem, QSizePolicy, QLineEdit, QFileDialog, QMessageBox
 )
-from PySide6.QtCore import Qt, QByteArray
+from PySide6.QtCore import Qt, QByteArray, QSize
 from PySide6.QtGui import QPixmap, QPainter, QImage, QIntValidator
-import qtawesome as qta 
+import qtawesome as qta
+import base64
 import mysql.connector
 
 class EquipmentViewPage(QWidget):
@@ -24,6 +25,9 @@ class EquipmentViewPage(QWidget):
                                           font-size: 20px;
                                           font-weight: bold;""")
         
+        #Picture variable
+        self.aepic_path = ''
+        
         # Widget content area
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -33,7 +37,32 @@ class EquipmentViewPage(QWidget):
 
         # Equipment image
         self.equipment_image = QLabel()
-        grid_layout.addWidget(self.equipment_image, 0, 0, 4, 1)  # Spanning 4 rows for the image
+        self.equipment_image.setFixedSize(300, 300)
+        self.equipment_image.setStyleSheet("border: 1px solid #ffffff;")
+        self.equipment_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Add Image Button (inside the image)
+        self.image_button = QPushButton(qta.icon('ri.image-add-fill', color='black'), "")
+        self.image_button.setIconSize(QSize(24, 24))
+        self.image_button.setFixedSize(30, 30)
+        self.image_button.setStyleSheet("""
+            QPushButton {
+                background-color: #ffffff;
+                border-radius: 15px;
+                color: #000000;
+            }
+            QPushButton:hover {
+                background-color: #383838;
+            }
+        """)
+        self.image_button.clicked.connect(self.select_image)
+
+        # Stack the image and button using a layout
+        image_layout = QVBoxLayout(self.equipment_image)
+        image_layout.addWidget(self.image_button, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+
+        # Add the image layout to the grid layout
+        grid_layout.addWidget(self.equipment_image, 0, 0, 4, 1, Qt.AlignmentFlag.AlignLeft)  # Spanning 4 rows for the image
 
         # Spacer item
         spacer = QWidget()
@@ -46,14 +75,15 @@ class EquipmentViewPage(QWidget):
         stock_label = QLabel("In-Stock:")
         total_label = QLabel("Total:")
 
-        grid_layout.addWidget(name_label, 0, 2)
-        grid_layout.addWidget(id_label, 1, 2)
-        grid_layout.addWidget(stock_label, 2, 2)
-        grid_layout.addWidget(total_label, 3, 2)
+        grid_layout.addWidget(name_label, 0, 2, Qt.AlignmentFlag.AlignVCenter)
+        grid_layout.addWidget(id_label, 1, 2, Qt.AlignmentFlag.AlignVCenter)
+        grid_layout.addWidget(stock_label, 2, 2, Qt.AlignmentFlag.AlignVCenter)
+        grid_layout.addWidget(total_label, 3, 2, Qt.AlignmentFlag.AlignVCenter)
 
         # Details content layout
         self.e_vname  = QLabel()
         self.equipment_name = QLineEdit()
+        self.equipment_name.setStyleSheet("background-color: #484848; color: #ffffff;")
         self.e_vid    = QLabel()
         self.e_vstock = QLabel()
         self.e_vtotal = QLabel()
@@ -84,12 +114,12 @@ class EquipmentViewPage(QWidget):
         self.num_layout.addWidget(self.plus_button)
 
         # Add field into the grid layout
-        grid_layout.addWidget(self.e_vname, 0, 3)
-        grid_layout.addWidget(self.equipment_name, 0, 3)
-        grid_layout.addWidget(self.e_vid, 1, 3)
-        grid_layout.addWidget(self.e_vstock, 2, 3)
-        grid_layout.addWidget(self.e_vtotal, 3, 3)
-        grid_layout.addWidget(self.number_picker_widget, 3, 3)
+        grid_layout.addWidget(self.e_vname, 0, 3, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        grid_layout.addWidget(self.equipment_name, 0, 3, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        grid_layout.addWidget(self.e_vid, 1, 3, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        grid_layout.addWidget(self.e_vstock, 2, 3, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        grid_layout.addWidget(self.e_vtotal, 3, 3, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        grid_layout.addWidget(self.number_picker_widget, 3, 3, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
 
         layout.addLayout(grid_layout)
 
@@ -292,18 +322,130 @@ class EquipmentViewPage(QWidget):
         print(f"Viewing Borrow ID: {bid}")
 
     def save(self):
-        self.update_content(self.e_vid.text())
-        self.equipment_name.hide()
-        self.number_picker_widget.hide()
-        self.e_vname.show()
-        self.e_vtotal.show()
-        self.e_vedit.show()
-        self.e_vremove.show()
-        self.e_vsave.hide()
-        self.e_vcancel.hide()
-        print("save")
+        # Get equipment name and total amount
+        equipment_name = self.equipment_name.text()
+        total_amount = int(self.amount_field.text())
+
+        # Get the original displayed values
+        original_name = self.e_vname.text()
+        original_total_amount = int(self.e_vtotal.text())
+        in_stock_amount = int(self.e_vstock.text())
+
+        # Check for image update
+        if self.aepic_path:
+            image = open(self.aepic_path, 'rb').read()
+            encoded_image = base64.b64encode(image)
+        else:
+            encoded_image = None
+
+        # Extract numeric part of equipment ID
+        id_numeric_part = int(self.e_vid.text()[1:])
+
+        # Track changes to be made in SQL
+        changes = []
+        update_data = []
+
+        # Compare name change
+        if equipment_name != original_name:
+            changes.append(f"Name: {original_name} -> {equipment_name}")
+            update_data.append(("e_name", equipment_name))
+
+        # Compare total amount change
+        if total_amount != original_total_amount:
+            changes.append(f"Total Amount: {original_total_amount} -> {total_amount}")
+            # Adjust current amount based on the change in total amount
+            current_amount_diff = total_amount - original_total_amount
+            update_data.append(("e_amount", total_amount))
+            update_data.append(("e_curr_amount", (in_stock_amount + current_amount_diff)))
+
+        # Compare image change
+        if encoded_image is not None:
+            changes.append("Image: Updated")
+            update_data.append(("e_img", encoded_image))
+
+        # If no changes, proceed with hiding the fields and resetting the view
+        if not changes:
+            self.update_content(self.e_vid.text())
+            self.image_button.hide()
+            self.equipment_name.hide()
+            self.number_picker_widget.hide()
+            self.e_vname.show()
+            self.e_vtotal.show()
+            self.e_vedit.show()
+            self.e_vremove.show()
+            self.e_vsave.hide()
+            self.e_vcancel.hide()
+            print("No changes detected, exiting save.")
+            return
+
+        # Prepare update query and data
+        update_query = "UPDATE equipment SET "
+        update_query += ", ".join([f"{field} = %s" for field, _ in update_data])
+        update_query += " WHERE e_id = %s"
+        query_data = [value for _, value in update_data] + [id_numeric_part]
+
+        # Show the confirmation message box with the changes
+        changes_text = "\n".join(changes)
+        message_box = QMessageBox()
+        message_box.setWindowTitle("Confirm Changes")
+        message_box.setText(f"The following changes will be applied:\n\n{changes_text}")
+        message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        result = message_box.exec_()
+
+        # If user presses OK, proceed with the update
+        if result == QMessageBox.Ok:
+            try:
+                connection = mysql.connector.connect(
+                    host="localhost",
+                    user="root",
+                    password="",
+                    database="test"
+                )
+                cursor = connection.cursor()
+
+                # Execute the update query
+                cursor.execute(update_query, query_data)
+
+                # Commit the transaction
+                connection.commit()
+
+                # Proceed with hiding the fields and resetting the view
+                self.update_content(self.e_vid.text())
+                self.image_button.hide()
+                self.equipment_name.hide()
+                self.number_picker_widget.hide()
+                self.e_vname.show()
+                self.e_vtotal.show()
+                self.e_vedit.show()
+                self.e_vremove.show()
+                self.e_vsave.hide()
+                self.e_vcancel.hide()
+                print("Save successful, changes applied.")
+
+            except mysql.connector.Error as e:
+                print(f"An error occurred while connecting to the database: {e}")
+
+            finally:
+                if connection.is_connected():
+                    cursor.close()
+                    connection.close()
+
+        else:
+            # User canceled the action, so reset the view without saving changes
+            self.update_content(self.e_vid.text())
+            self.image_button.hide()
+            self.equipment_name.hide()
+            self.number_picker_widget.hide()
+            self.e_vname.show()
+            self.e_vtotal.show()
+            self.e_vedit.show()
+            self.e_vremove.show()
+            self.e_vsave.hide()
+            self.e_vcancel.hide()
+            print("Save canceled, no changes applied.")
 
     def cancel(self):
+        self.image_button.hide()
         self.equipment_name.hide()
         self.number_picker_widget.hide()
         self.e_vname.show()
@@ -315,6 +457,7 @@ class EquipmentViewPage(QWidget):
         print("cancel")
 
     def edit(self):
+        self.image_button.show()
         self.equipment_name.show()
         self.number_picker_widget.show()
         self.e_vname.hide()
@@ -351,6 +494,15 @@ class EquipmentViewPage(QWidget):
         if current_value < restrain_value:
             self.amount_field.setText(str(restrain_value))
 
+    def select_image(self):
+        self.aepic_path = ''
+        file_dialog = QFileDialog(self)
+        file_path, _ = file_dialog.getOpenFileName(self, "Select Image", "", "Images (*.png *.xpm *.jpg)")
+        if file_path:
+            self.aepic_path = file_path
+            pixmap = QPixmap(file_path)
+            self.set_rounded_pixmap(self.equipment_image, pixmap)
+
     def update_content(self, equipment_id):
         content = self.fetch_content(equipment_id)
 
@@ -358,13 +510,13 @@ class EquipmentViewPage(QWidget):
         self.equipment_image.setStyleSheet("""border:1px solid #ffffff""")
         self.equipment_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        if content[2] != '':
+        if content[2] is None or len(content[2]) == 0:
+            pixmap = self.get_default_image()
+            self.equipment_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio)) 
+        else:
             image_data = QByteArray.fromBase64(content[2])
             pixmap = QPixmap(QImage.fromData(image_data))
             self.set_rounded_pixmap(self.equipment_image,pixmap)
-        else:
-            pixmap = self.get_default_image()
-            self.equipment_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio)) 
 
         self.e_vname.setText (content[1])
         self.equipment_name.setText (content[1])
@@ -376,6 +528,9 @@ class EquipmentViewPage(QWidget):
         self.populate_borrow_list(self.fetch_borrow_list(equipment_id))
 
         if self.main_window.uid == "LA0001":
+            self.e_vname.show()
+            self.e_vtotal.show()
+            self.image_button.hide()
             self.number_picker_widget.hide()
             self.equipment_name.hide()
             self.e_vcancel.hide()
@@ -383,6 +538,9 @@ class EquipmentViewPage(QWidget):
             self.e_vedit.show()
             self.e_vremove.show()
         else:
+            self.e_vname.show()
+            self.e_vtotal.show()
+            self.image_button.hide()
             self.number_picker_widget.hide()
             self.equipment_name.hide()
             self.e_vcancel.hide()

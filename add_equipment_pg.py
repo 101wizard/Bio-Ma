@@ -98,6 +98,7 @@ class AddEquipmentPage(QWidget):
         minus_button = QPushButton("-")
         minus_button.setFixedSize(30, 30)
         minus_button.clicked.connect(self.decrease_total)
+
         plus_button = QPushButton("+")
         plus_button.setFixedSize(30, 30)
         plus_button.clicked.connect(self.increase_total)
@@ -208,6 +209,7 @@ class AddEquipmentPage(QWidget):
         self.a_etotal.setText(str(current_value + 1))
 
     def select_image(self):
+        self.aepic_path = ''
         file_dialog = QFileDialog(self)
         file_path, _ = file_dialog.getOpenFileName(self, "Select Image", "", "Images (*.png *.xpm *.jpg)")
         if file_path:
@@ -223,7 +225,7 @@ class AddEquipmentPage(QWidget):
         total_amount = int(self.a_etotal.text())
 
         # Convert image to a binary format (for storing in database)
-        if image:
+        if self.aepic_path:
             image = open(self.aepic_path, 'rb').read()
             encoded_image = base64.b64encode(image)
         else:

@@ -195,6 +195,8 @@ class BorrowPage(QWidget):
         amount_field.setAlignment(Qt.AlignmentFlag.AlignCenter)
         amount_field.setStyleSheet("background-color: #484848; color: #ffffff; border-radius: 5px;")
 
+        amount_field.textChanged.connect(lambda: self.validate_amount_field(amount_field, current_amount))
+
         if equipment_id in self.selected_amounts:
             value = self.selected_amounts[equipment_id]
             if isinstance(value, QLineEdit):  # Ensure value is a string
@@ -205,7 +207,7 @@ class BorrowPage(QWidget):
         minus_button = QPushButton("-")
         minus_button.setFixedSize(30, 30)
         minus_button.setStyleSheet("background-color: #484848; color: #ffffff;")
-        minus_button.clicked.connect(lambda: self.decrease_total(amount_field, current_amount))
+        minus_button.clicked.connect(lambda: self.decrease_total(amount_field))
 
         plus_button = QPushButton("+")
         plus_button.setFixedSize(30, 30)
@@ -246,6 +248,13 @@ class BorrowPage(QWidget):
         current_value = int(amount_field.text())
         if current_value < max_amount:
             amount_field.setText(str(current_value + 1))
+
+    def validate_amount_field(self, amount_field, max_amount):
+        current_value = int(amount_field.text()) if amount_field.text() else 0
+        
+        # Enforce upper restraint
+        if current_value > max_amount:
+            amount_field.setText(str(max_amount))
 
     def confirm_selection(self):
         # Filter selected items (amount > 0)

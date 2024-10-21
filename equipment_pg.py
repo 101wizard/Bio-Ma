@@ -161,7 +161,7 @@ class EquipmentPage(QWidget):
         equipment_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         equipment_layout.addWidget(equipment_image)
 
-        if img != '':
+        if img != None:
             image_data = QByteArray.fromBase64(img)
             pixmap = QPixmap(QImage.fromData(image_data))
             self.set_rounded_pixmap(equipment_image,pixmap)
