@@ -283,6 +283,9 @@ class UserFrameTemplate(QWidget):
         print("remove")
 
     def update_content(self, user_id, title):
+        if title == "User : Lab Assistant" and user_id == self.main_window.uid:
+            title = "Profile"
+
         self.title_label.setText(title)
         content = self.fetch_content(user_id, title)
 
@@ -306,10 +309,16 @@ class UserFrameTemplate(QWidget):
         self.populate_borrow_list(self.fetch_borrow_list(user_id, title),title)
             
         if title == "User : Lab Assistant":
-            self.user_header.setText("Borrower ID")
-            self.e_vedit.hide()
-            self.e_vremove.hide()
-            self.e_vsave.hide()
+            if self.main_window.uid == "LA0001":
+                self.user_header.setText("Borrower ID")
+                self.e_vedit.show()
+                self.e_vremove.show()
+                self.e_vsave.hide()
+            else:
+                self.user_header.setText("Borrower ID")
+                self.e_vedit.hide()
+                self.e_vremove.hide()
+                self.e_vsave.hide()
         elif title == "User : Researcher":
             self.user_header.setText("Approver ID")
             self.e_vsave.hide()

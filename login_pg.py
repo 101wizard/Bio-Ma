@@ -168,7 +168,6 @@ class LoginPage(QWidget):
             if uid == "":
                 return
             
-
             if re.match(pattern, uid):
                 intuid = int(uid[2:])
 
@@ -190,17 +189,8 @@ class LoginPage(QWidget):
                 if i == 1:
                     QMessageBox.warning(self, "Error", "Invalid UID")
             else:
-                if uid == 'admin':
-                    if password == '123456':
-                        self.camera_thread.stop()
-                        self.main_window = MainWindow('LA0001')
-                        self.main_window.show()
-                        self.close()
-                    else:
-                        QMessageBox.warning(self, "Error", "Invalid password for admin")
-                else:
-                    QMessageBox.warning(self, "Error", "Invalid UID format")
-                    return
+                QMessageBox.warning(self, "Error", "Invalid UID format")
+                return
 
         except mysql.connector.Error as e:
             print(f"An error occurred while fetching the user list: {e}")

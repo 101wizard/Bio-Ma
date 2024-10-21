@@ -237,7 +237,7 @@ class BorrowPage(QWidget):
         # Store reference to amount field
         self.selected_amounts[equipment_id] = amount_field
 
-    def decrease_total(self, amount_field, max_amount):
+    def decrease_total(self, amount_field):
         current_value = int(amount_field.text())
         if current_value > 0:
             amount_field.setText(str(current_value - 1))
