@@ -469,6 +469,67 @@ class EquipmentViewPage(QWidget):
         print("edit")
 
     def remove(self):
+        # Check if there are any unreturned equipment
+        total_amount = int(self.e_vtotal.text())   # The total equipment count
+        current_stock = int(self.e_vstock.text())  # The current stock available
+
+        if current_stock != total_amount:
+            # Show a message box indicating that unreturned equipment exist
+            message_box = QMessageBox()
+            message_box.setWindowTitle("Error")
+            message_box.setText("There are unreturned equipment. You cannot delete this equipment.")
+            message_box.setIcon(QMessageBox.Warning)
+            message_box.setStandardButtons(QMessageBox.Ok)
+            message_box.exec_()
+            return  # Exit if there are unreturned equipment
+
+        # If all equipment are returned, ask for delete confirmation
+        message_box = QMessageBox()
+        message_box.setWindowTitle("Confirm Deletion")
+        message_box.setText(f"Are you sure you want to delete this equipment?")
+        message_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Delete)
+        message_box.setDefaultButton(QMessageBox.Cancel)
+        result = message_box.exec_()
+
+        # If the user presses cancel, do nothing
+        if result == QMessageBox.Cancel:
+            return
+
+        # If the user confirms deletion
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # Extract numeric part of equipment ID
+            id_numeric_part = int(self.e_vid.text()[1:])
+
+            # SQL Query to delete the equipment from the database
+            query = "DELETE FROM equipment WHERE e_id = %s"
+            
+            # Execute the SQL query
+            cursor.execute(query, (id_numeric_part,))
+
+            # Commit the transaction
+            connection.commit()
+
+            print("Equipment deleted successfully.")
+
+        except mysql.connector.Error as e:
+            # Handle any SQL or connection errors
+            print(f"An error occurred while connecting to the database: {e}")
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+        # After deletion, return to the equipment page
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.equipment_page)
         print("remove")
 
