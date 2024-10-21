@@ -292,6 +292,7 @@ class UserFrameTemplate(QWidget):
     def update_content(self, user_id, title):
         if title == "User : Lab Assistant" and user_id == self.main_window.uid:
             title = "Profile"
+            self.main_window.side_nav_bar.move_indicator(self.main_window.side_nav_bar.findChild(QWidget, "Profile"))
 
         self.title_label.setText(title)
         content = self.fetch_content(user_id, title)

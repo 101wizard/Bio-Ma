@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea,
+    QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QGridLayout,
     QFrame, QSpacerItem, QSizePolicy, QLineEdit
 )
 from PySide6.QtCore import Qt, QByteArray
-from PySide6.QtGui import QPixmap, QPainter, QImage
+from PySide6.QtGui import QPixmap, QPainter, QImage, QIntValidator
 import qtawesome as qta 
 import mysql.connector
 
@@ -28,59 +28,76 @@ class EquipmentViewPage(QWidget):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        # Spacer item
-        spacer = QWidget()
-        spacer.setFixedWidth(20)
-
-        # Details layout
-        details_layout = QHBoxLayout()
+        # Grid layout for the upper section
+        grid_layout = QGridLayout()
 
         # Equipment image
         self.equipment_image = QLabel()
-        details_layout.addWidget(self.equipment_image)
+        grid_layout.addWidget(self.equipment_image, 0, 0, 4, 1)  # Spanning 4 rows for the image
 
-        # Add spacer
-        details_layout.addWidget(spacer)
+        # Spacer item
+        spacer = QWidget()
+        spacer.setFixedWidth(20)
+        grid_layout.addWidget(spacer, 0, 1, 4, 1)  # Spanning 4 rows for the spacer
 
         # Details label layout
-        details_layout_label = QVBoxLayout()
-
-        # Details label
         name_label  = QLabel("Name:")
         id_label    = QLabel("Equipment ID:")
         stock_label = QLabel("In-Stock:")
         total_label = QLabel("Total:")
 
-        details_layout_label.addWidget(name_label)
-        details_layout_label.addWidget(id_label)
-        details_layout_label.addWidget(stock_label)
-        details_layout_label.addWidget(total_label)
-
-        details_layout.addLayout(details_layout_label)
+        grid_layout.addWidget(name_label, 0, 2)
+        grid_layout.addWidget(id_label, 1, 2)
+        grid_layout.addWidget(stock_label, 2, 2)
+        grid_layout.addWidget(total_label, 3, 2)
 
         # Details content layout
-        details_layout_content = QVBoxLayout()
-
-        # Details content
         self.e_vname  = QLabel()
+        self.equipment_name = QLineEdit()
         self.e_vid    = QLabel()
         self.e_vstock = QLabel()
         self.e_vtotal = QLabel()
+        self.number_picker_widget = QWidget()
 
-        details_layout_content.addWidget(self.e_vname)
-        details_layout_content.addWidget(self.e_vid)
-        details_layout_content.addWidget(self.e_vstock)
-        details_layout_content.addWidget(self.e_vtotal)
+        # Number Picker for total selection
+        self.num_layout = QHBoxLayout(self.number_picker_widget)
+        self.amount_field = QLineEdit("0")
+        self.amount_field.setValidator(QIntValidator())
+        self.amount_field.setFixedSize(50, 30)
+        self.amount_field.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.amount_field.setStyleSheet("background-color: #484848; color: #ffffff; border-radius: 5px;")
 
-        details_layout.addLayout(details_layout_content)
+        self.amount_field.textChanged.connect(self.validate_amount_field)
 
-        layout.addLayout(details_layout)
+        self.minus_button = QPushButton("-")
+        self.minus_button.setFixedSize(30, 30)
+        self.minus_button.setStyleSheet("background-color: #484848; color: #ffffff;")
+        self.minus_button.clicked.connect(lambda: self.decrease_total())
 
-        # Edit Remove Save button section layout
+        self.plus_button = QPushButton("+")
+        self.plus_button.setFixedSize(30, 30)
+        self.plus_button.setStyleSheet("background-color: #484848; color: #ffffff;")
+        self.plus_button.clicked.connect(lambda: self.increase_total())
+
+        self.num_layout.addWidget(self.minus_button)
+        self.num_layout.addWidget(self.amount_field)
+        self.num_layout.addWidget(self.plus_button)
+
+        # Add field into the grid layout
+        grid_layout.addWidget(self.e_vname, 0, 3)
+        grid_layout.addWidget(self.equipment_name, 0, 3)
+        grid_layout.addWidget(self.e_vid, 1, 3)
+        grid_layout.addWidget(self.e_vstock, 2, 3)
+        grid_layout.addWidget(self.e_vtotal, 3, 3)
+        grid_layout.addWidget(self.number_picker_widget, 3, 3)
+
+        layout.addLayout(grid_layout)
+
+        # Edit Remove Save button section layout (as it is)
         button_section = QHBoxLayout()
         button_section.setAlignment(Qt.AlignmentFlag.AlignRight)
 
-        # Edit Remove Save button
+        # Edit Remove Save buttons
         self.e_vedit = QPushButton("Edit")
         self.e_vedit.setStyleSheet("font-size: 15px; color: #000000; background-color: #ffffff; border-radius: 10px;")
         self.e_vedit.setFixedSize(80, 25)
@@ -90,14 +107,19 @@ class EquipmentViewPage(QWidget):
         self.e_vsave = QPushButton("Save")
         self.e_vsave.setStyleSheet("font-size: 15px; color: #000000; background-color: #ffffff; border-radius: 10px;")
         self.e_vsave.setFixedSize(80, 25)
+        self.e_vcancel = QPushButton("Cancel")
+        self.e_vcancel.setStyleSheet("font-size: 15px; color: #000000; background-color: #ffffff; border-radius: 10px;")
+        self.e_vcancel.setFixedSize(80, 25)
 
         self.e_vedit.clicked.connect(lambda: self.edit())
         self.e_vremove.clicked.connect(lambda: self.remove())
         self.e_vsave.clicked.connect(lambda: self.save())
+        self.e_vcancel.clicked.connect(lambda: self.cancel())
 
         button_section.addWidget(self.e_vedit)
         button_section.addWidget(self.e_vremove)
         button_section.addWidget(self.e_vsave)
+        button_section.addWidget(self.e_vcancel)
 
         layout.addLayout(button_section)
 
@@ -270,20 +292,64 @@ class EquipmentViewPage(QWidget):
         print(f"Viewing Borrow ID: {bid}")
 
     def save(self):
+        self.update_content(self.e_vid.text())
+        self.equipment_name.hide()
+        self.number_picker_widget.hide()
+        self.e_vname.show()
+        self.e_vtotal.show()
         self.e_vedit.show()
         self.e_vremove.show()
         self.e_vsave.hide()
+        self.e_vcancel.hide()
         print("save")
 
+    def cancel(self):
+        self.equipment_name.hide()
+        self.number_picker_widget.hide()
+        self.e_vname.show()
+        self.e_vtotal.show()
+        self.e_vedit.show()
+        self.e_vremove.show()
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
+        print("cancel")
+
     def edit(self):
+        self.equipment_name.show()
+        self.number_picker_widget.show()
+        self.e_vname.hide()
+        self.e_vtotal.hide()
         self.e_vedit.hide()
         self.e_vremove.hide()
         self.e_vsave.show()
+        self.e_vcancel.show()
         print("edit")
 
     def remove(self):
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.equipment_page)
         print("remove")
+
+    def decrease_total(self):
+        current_value = int(self.amount_field.text())
+        instock_value = int(self.e_vstock.text())
+        total_value = int(self.e_vtotal.text())
+        restrain_value = total_value - instock_value
+        if current_value > restrain_value:
+            self.amount_field.setText(str(current_value - 1))
+
+    def increase_total(self):
+        current_value = int(self.amount_field.text())
+        self.amount_field.setText(str(current_value + 1))
+
+    def validate_amount_field(self):
+        current_value = int(self.amount_field.text()) if self.amount_field.text() else 0
+        instock_value = int(self.e_vstock.text())
+        total_value = int(self.e_vtotal.text())
+        restrain_value = total_value - instock_value
+        
+        # Enforce lower restraint
+        if current_value < restrain_value:
+            self.amount_field.setText(str(restrain_value))
 
     def update_content(self, equipment_id):
         content = self.fetch_content(equipment_id)
@@ -301,17 +367,25 @@ class EquipmentViewPage(QWidget):
             self.equipment_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio)) 
 
         self.e_vname.setText (content[1])
+        self.equipment_name.setText (content[1])
         self.e_vid.setText   (content[0])
         self.e_vstock.setText(str(content[4]))
         self.e_vtotal.setText(str(content[3]))
+        self.amount_field.setText(str(content[3]))
 
         self.populate_borrow_list(self.fetch_borrow_list(equipment_id))
 
         if self.main_window.uid == "LA0001":
+            self.number_picker_widget.hide()
+            self.equipment_name.hide()
+            self.e_vcancel.hide()
             self.e_vsave.hide()
             self.e_vedit.show()
             self.e_vremove.show()
         else:
+            self.number_picker_widget.hide()
+            self.equipment_name.hide()
+            self.e_vcancel.hide()
             self.e_vsave.hide()
             self.e_vedit.hide()
             self.e_vremove.hide()
