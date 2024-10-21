@@ -122,7 +122,7 @@ class UserFrameTemplate(QWidget):
         self.e_vedit.clicked.connect(lambda: self.edit())
         self.e_vremove.clicked.connect(lambda: self.remove())
         self.e_vsave.clicked.connect(lambda: self.save(self.u_vid.text(), self.title_label.text()))
-        self.e_vcancel.clicked.connect(lambda: self.cancel())
+        self.e_vcancel.clicked.connect(lambda: self.cancel(self.u_vid.text(), self.title_label.text()))
 
         button_section.addWidget(self.e_vedit)
         button_section.addWidget(self.e_vremove)
@@ -307,8 +307,11 @@ class UserFrameTemplate(QWidget):
 
     def save(self, user_id, title):
         self.update_content(user_id, title)
+        if title == "Profile":
+            self.e_vremove.hide()
+        else:
+            self.e_vremove.show()
         self.e_vedit.show()
-        self.e_vremove.show()
         self.e_vsave.hide()
         self.e_vcancel.hide()
         print("save")
@@ -320,9 +323,12 @@ class UserFrameTemplate(QWidget):
         self.e_vcancel.show()
         print("edit")
 
-    def cancel(self):
+    def cancel(self, user_id, title):
+        if title == "Profile":
+            self.e_vremove.hide()
+        else:
+            self.e_vremove.show()
         self.e_vedit.show()
-        self.e_vremove.show()
         self.e_vsave.hide()
         self.e_vcancel.hide()
         print("cancel")
