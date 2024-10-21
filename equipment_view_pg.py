@@ -487,12 +487,14 @@ class EquipmentViewPage(QWidget):
         message_box = QMessageBox()
         message_box.setWindowTitle("Confirm Deletion")
         message_box.setText(f"Are you sure you want to delete this equipment?")
-        message_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Delete)
-        message_box.setDefaultButton(QMessageBox.Cancel)
-        result = message_box.exec_()
+        delete_button = message_box.addButton("Delete", QMessageBox.ActionRole)  # Custom "Delete" button
+        cancel_button = message_box.addButton(QMessageBox.Cancel)
+        message_box.setDefaultButton(cancel_button)
+
+        message_box.exec_()
 
         # If the user presses cancel, do nothing
-        if result == QMessageBox.Cancel:
+        if message_box.clickedButton() == cancel_button:
             return
 
         # If the user confirms deletion
@@ -530,7 +532,7 @@ class EquipmentViewPage(QWidget):
                 connection.close()
 
         # After deletion, return to the equipment page
-        self.main_window.stacked_widget.setCurrentWidget(self.main_window.equipment_page)
+        self.main_window.show_equipment()
         print("remove")
 
     def decrease_total(self):
