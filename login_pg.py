@@ -15,7 +15,6 @@ from src.utility import parse_model_name
 import face_recognition
 import os
 import numpy as np
-from main_pg import MainWindow
 
 class LoginPage(QWidget):
     def __init__(self):
@@ -178,6 +177,7 @@ class LoginPage(QWidget):
                         i = 0
 
                         if lab_assistant_data[2] == hashlib.sha256(lab_assistant_data[1].encode() + password.encode()).hexdigest():
+                            from main_pg import MainWindow
                             self.camera_thread.stop()
                             self.main_window = MainWindow(uid)
                             self.main_window.show()
