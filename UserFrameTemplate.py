@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea,
-    QFrame, QSpacerItem, QSizePolicy, QLineEdit
+    QFrame, QSpacerItem, QSizePolicy, QLineEdit, QGridLayout, QFileDialog
 )
-from PySide6.QtCore import Qt, QByteArray
+from PySide6.QtCore import Qt, QByteArray, QSize
 from PySide6.QtGui import QPixmap, QPainter, QImage
 import qtawesome as qta 
 import mysql.connector
@@ -17,13 +17,13 @@ class UserFrameTemplate(QWidget):
         main_layout = QVBoxLayout(self)
 
         # Title Label
-        self.title_label = QLabel()  # Assign as instance variable
+        self.title_label = QLabel()
         self.title_label.setStyleSheet("""font-family: "Times [Adobe]";
                                           color: #ffffff;
                                           padding: 15px;
                                           font-size: 20px;
                                           font-weight: bold;""")
-        
+
         # Widget content area
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -32,47 +32,72 @@ class UserFrameTemplate(QWidget):
         spacer = QWidget()
         spacer.setFixedWidth(20)
 
-        # Details layout
-        details_layout = QHBoxLayout()
+        # Details layout with QGridLayout
+        details_layout = QGridLayout()
 
         # User image
         self.user_image = QLabel()
-        details_layout.addWidget(self.user_image)
+        self.user_image.setFixedSize(300, 300)
+        self.user_image.setStyleSheet("border: 1px solid #ffffff;")
+        self.user_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Add spacer
-        details_layout.addWidget(spacer)
+        # Add Image Button (inside the image)
+        self.image_button = QPushButton(qta.icon('ri.image-add-fill', color='black'), "")
+        self.image_button.setIconSize(QSize(24, 24))
+        self.image_button.setFixedSize(30, 30)
+        self.image_button.setStyleSheet("""
+            QPushButton {
+                background-color: #ffffff;
+                border-radius: 15px;
+                color: #000000;
+            }
+            QPushButton:hover {
+                background-color: #383838;
+            }
+        """)
+        self.image_button.clicked.connect(self.select_image)
 
-        # Details label layout
-        details_layout_label = QVBoxLayout()
+        # Stack the image and button using a layout
+        image_layout = QVBoxLayout(self.user_image)
+        image_layout.addWidget(self.image_button, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
-        # Details label
-        name_label  = QLabel("Name:")
-        id_label    = QLabel("User ID:")
+        # User image (placed in the first row, first column)
+        details_layout.addWidget(self.user_image, 0, 0, 4, 1, Qt.AlignmentFlag.AlignLeft)  # Spanning 3 rows for the image
+
+        # Spacer item
+        spacer = QWidget()
+        spacer.setFixedWidth(20)
+        details_layout.addWidget(spacer, 0, 1, 4, 1)  # Spanning 4 rows for the spacer
+
+        # Details label layout in the grid
+        name_label = QLabel("Name:")
+        id_label = QLabel("User ID:")
         phone_label = QLabel("Phone:")
         email_label = QLabel("Email:")
 
-        details_layout_label.addWidget(name_label)
-        details_layout_label.addWidget(id_label)
-        details_layout_label.addWidget(phone_label)
-        details_layout_label.addWidget(email_label)
+        # Add labels to the grid
+        details_layout.addWidget(name_label, 0, 1, Qt.AlignmentFlag.AlignVCenter)
+        details_layout.addWidget(id_label, 1, 1, Qt.AlignmentFlag.AlignVCenter)
+        details_layout.addWidget(phone_label, 2, 1, Qt.AlignmentFlag.AlignVCenter)
+        details_layout.addWidget(email_label, 3, 1, Qt.AlignmentFlag.AlignVCenter)
 
-        details_layout.addLayout(details_layout_label)
-
-        # Details content layout
-        details_layout_content = QVBoxLayout()
-
-        # Details content
-        self.u_vname  = QLabel()
-        self.u_vid    = QLabel()
+        # Details content layout in the grid
+        self.u_vname = QLabel()
+        self.user_name = QLineEdit()
+        self.user_name.setStyleSheet("background-color: #484848; color: #ffffff;")
+        self.u_vid = QLabel()
         self.u_vphone = QLabel()
+        self.user_phone = QLineEdit()
+        self.user_phone.setStyleSheet("background-color: #484848; color: #ffffff;")
         self.u_vemail = QLabel()
+        self.user_email = QLineEdit()
+        self.user_email.setStyleSheet("background-color: #484848; color: #ffffff;")
 
-        details_layout_content.addWidget(self.u_vname)
-        details_layout_content.addWidget(self.u_vid)
-        details_layout_content.addWidget(self.u_vphone)
-        details_layout_content.addWidget(self.u_vemail)
-
-        details_layout.addLayout(details_layout_content)
+        # Add content to the grid next to the labels
+        details_layout.addWidget(self.u_vname, 0, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        details_layout.addWidget(self.u_vid, 1, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        details_layout.addWidget(self.u_vphone, 2, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        details_layout.addWidget(self.u_vemail, 3, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
 
         layout.addLayout(details_layout)
 
@@ -90,14 +115,19 @@ class UserFrameTemplate(QWidget):
         self.e_vsave = QPushButton("Save")
         self.e_vsave.setStyleSheet("font-size: 15px; color: #000000; background-color: #ffffff; border-radius: 10px;")
         self.e_vsave.setFixedSize(80, 25)
+        self.e_vcancel = QPushButton("Cancel")
+        self.e_vcancel.setStyleSheet("font-size: 15px; color: #000000; background-color: #ffffff; border-radius: 10px;")
+        self.e_vcancel.setFixedSize(80, 25)
 
         self.e_vedit.clicked.connect(lambda: self.edit())
         self.e_vremove.clicked.connect(lambda: self.remove())
         self.e_vsave.clicked.connect(lambda: self.save(self.u_vid.text(), self.title_label.text()))
+        self.e_vcancel.clicked.connect(lambda: self.cancel())
 
         button_section.addWidget(self.e_vedit)
         button_section.addWidget(self.e_vremove)
         button_section.addWidget(self.e_vsave)
+        button_section.addWidget(self.e_vcancel)
 
         layout.addLayout(button_section)
 
@@ -277,17 +307,38 @@ class UserFrameTemplate(QWidget):
 
     def save(self, user_id, title):
         self.update_content(user_id, title)
+        self.e_vedit.show()
+        self.e_vremove.show()
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
         print("save")
 
     def edit(self):
         self.e_vedit.hide()
         self.e_vremove.hide()
         self.e_vsave.show()
+        self.e_vcancel.show()
         print("edit")
+
+    def cancel(self):
+        self.e_vedit.show()
+        self.e_vremove.show()
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
+        print("cancel")
 
     def remove(self):
         self.main_window.stacked_widget.setCurrentWidget(self.main_window.user_page)
         print("remove")
+
+    def select_image(self):
+        self.aepic_path = ''
+        file_dialog = QFileDialog(self)
+        file_path, _ = file_dialog.getOpenFileName(self, "Select Image", "", "Images (*.png *.xpm *.jpg)")
+        if file_path:
+            self.aepic_path = file_path
+            pixmap = QPixmap(file_path)
+            self.set_rounded_pixmap(self.user_image, pixmap)
 
     def update_content(self, user_id, title):
         if title == "User : Lab Assistant" and user_id == self.main_window.uid:
@@ -322,19 +373,23 @@ class UserFrameTemplate(QWidget):
                 self.e_vedit.show()
                 self.e_vremove.show()
                 self.e_vsave.hide()
+                self.e_vcancel.hide()
             else:
                 self.user_header.setText("Borrower ID")
                 self.e_vedit.hide()
                 self.e_vremove.hide()
                 self.e_vsave.hide()
+                self.e_vcancel.hide()
         elif title == "User : Researcher":
             self.user_header.setText("Approver ID")
             self.e_vsave.hide()
+            self.e_vcancel.hide()
             self.e_vedit.show()
             self.e_vremove.show()
         elif title == "Profile":
             self.user_header.setText("Borrower ID")
             self.e_vsave.hide()
+            self.e_vcancel.hide()
             self.e_vedit.show()
             self.e_vremove.hide()
         else:
