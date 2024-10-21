@@ -170,7 +170,14 @@ class UserFrameTemplate(QWidget):
         # If entity is lab assistant or researcher or profile based on entity
         try:
             # Step 1: Format user_id based on the entity
-            if entity == 'User : Lab Assistant':
+            if entity == 'Profile':
+                formatted_user_id = int(user_id[2:])  # Convert LA0001 -> 1
+                query = """
+                    SELECT borrow_id, r_id, due_date
+                    FROM borrow
+                    WHERE la_id = %s
+                """
+            elif entity == 'User : Lab Assistant':
                 formatted_user_id = int(user_id[2:])  # Convert LA0001 -> 1
                 query = """
                     SELECT borrow_id, r_id, due_date
@@ -293,13 +300,13 @@ class UserFrameTemplate(QWidget):
         self.user_image.setStyleSheet("""border:1px solid #ffffff""")
         self.user_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        if content[4] != '':
+        if content[4] is None or len(content[4]) == 0: 
+            pixmap = self.get_default_image()
+            self.user_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))
+        else:
             image_data = QByteArray.fromBase64(content[4])
             pixmap = QPixmap(QImage.fromData(image_data))
-            self.set_rounded_pixmap(self.user_image,pixmap)
-        else:
-            pixmap = self.get_default_image()
-            self.user_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio)) 
+            self.set_rounded_pixmap(self.user_image, pixmap)
 
         self.u_vname.setText (content[1])
         self.u_vid.setText   (content[0])
