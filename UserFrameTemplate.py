@@ -1,3 +1,4 @@
+import cv2
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea,
     QFrame, QSpacerItem, QSizePolicy, QLineEdit, QGridLayout, QFileDialog,QMessageBox
@@ -7,6 +8,9 @@ from PySide6.QtGui import QPixmap, QPainter, QImage
 import qtawesome as qta
 import base64
 import mysql.connector
+import string
+import random
+import hashlib
 
 class UserFrameTemplate(QWidget):
     def __init__(self, main_window):
@@ -32,11 +36,11 @@ class UserFrameTemplate(QWidget):
         layout = QVBoxLayout(widget)
 
         # Spacer item
-        spacer = QWidget()
-        spacer.setFixedWidth(20)
+        self.spacer = QWidget()
+        self.spacer.setFixedWidth(20)
 
         # Details layout with QGridLayout
-        details_layout = QGridLayout()
+        self.details_layout = QGridLayout()
 
         # User image
         self.user_image = QLabel()
@@ -65,24 +69,24 @@ class UserFrameTemplate(QWidget):
         image_layout.addWidget(self.image_button, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
         # User image (placed in the first row, first column)
-        details_layout.addWidget(self.user_image, 0, 0, 4, 1, Qt.AlignmentFlag.AlignLeft)  # Spanning 3 rows for the image
+        self.details_layout.addWidget(self.user_image, 0, 0, 5, 1, Qt.AlignmentFlag.AlignLeft)  # Spanning 3 rows for the image
 
         # Spacer item
-        spacer = QWidget()
-        spacer.setFixedWidth(20)
-        details_layout.addWidget(spacer, 0, 1, 4, 1)  # Spanning 4 rows for the spacer
+        self.details_layout.addWidget(self.spacer, 0, 1, 5, 1)  # Spanning 4 rows for the spacer
 
         # Details label layout in the grid
         name_label = QLabel("Name:")
         id_label = QLabel("User ID:")
         phone_label = QLabel("Phone:")
         email_label = QLabel("Email:")
+        self.password_label = QLabel("Password:")
 
         # Add labels to the grid
-        details_layout.addWidget(name_label, 0, 1, Qt.AlignmentFlag.AlignVCenter)
-        details_layout.addWidget(id_label, 1, 1, Qt.AlignmentFlag.AlignVCenter)
-        details_layout.addWidget(phone_label, 2, 1, Qt.AlignmentFlag.AlignVCenter)
-        details_layout.addWidget(email_label, 3, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.details_layout.addWidget(name_label, 0, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.details_layout.addWidget(id_label, 1, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.details_layout.addWidget(phone_label, 2, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.details_layout.addWidget(email_label, 3, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.details_layout.addWidget(self.password_label, 4, 1, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # Details content layout in the grid
         self.u_vname = QLabel()
@@ -95,17 +99,24 @@ class UserFrameTemplate(QWidget):
         self.u_vemail = QLabel()
         self.user_email = QLineEdit()
         self.user_email.setStyleSheet("background-color: #484848; color: #ffffff;")
+        self.u_vpassword = QLabel("********")
+        self.user_password = QLineEdit()
+        self.user_password.setStyleSheet("background-color: #484848; color: #ffffff;")
+        self.user_password.setPlaceholderText("Password")
+        self.user_password.setEchoMode(QLineEdit.Password)  
 
         # Add content to the grid next to the labels
-        details_layout.addWidget(self.u_vname, 0, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        details_layout.addWidget(self.user_name, 0, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        details_layout.addWidget(self.u_vid, 1, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        details_layout.addWidget(self.u_vphone, 2, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        details_layout.addWidget(self.user_phone, 2, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        details_layout.addWidget(self.u_vemail, 3, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        details_layout.addWidget(self.user_email, 3, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.u_vname, 0, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.user_name, 0, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.u_vid, 1, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.u_vphone, 2, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.user_phone, 2, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.u_vemail, 3, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.user_email, 3, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.u_vpassword, 4, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.addWidget(self.user_password, 4, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
 
-        layout.addLayout(details_layout)
+        layout.addLayout(self.details_layout)
 
         # Edit Remove Save button section layout
         button_section = QHBoxLayout()
@@ -320,6 +331,8 @@ class UserFrameTemplate(QWidget):
             name_field = "la_name"
             phone_field = "la_phone"
             email_field = "la_email"
+            salt_field = "salt"
+            hashed_field = "password"
         elif title == "User : Researcher":
             id_numeric_part = int(self.u_vid.text()[1:])
             table = "researcher"
@@ -360,25 +373,20 @@ class UserFrameTemplate(QWidget):
             changes.append(f"Email: {original_email} -> {email}")
             update_data.append((email_field, email))
 
+        # Compare password change
+        if title == "User : Lab Assistant" or title == "Profile":
+            if self.user_password.text() != '':
+                changes.append(f"Password: **new password**")
+                salt = self.generate_random_characters()
+                update_data.append((salt_field, salt))
+                encoded_password = hashlib.sha256(salt.encode() + self.user_password.text().encode()).hexdigest()
+                update_data.append((hashed_field, encoded_password))
 
         # If no changes, proceed with hiding the fields and resetting the view
         if not changes:
             self.update_content(user_id, title)
-            if title == "Profile":
-                self.e_vremove.hide()
-            else:
-                self.e_vremove.show()
-            self.e_vedit.show()
-            self.u_vname.show()
-            self.u_vphone.show()
-            self.u_vemail.show()
-            self.user_name.hide()
-            self.user_phone.hide()
-            self.user_email.hide()
-            self.image_button.hide()
-            self.e_vsave.hide()
-            self.e_vcancel.hide()
-            print("cancel")
+            print("No changes detected!")
+            return
 
         # Prepare update query and data
         update_query = f"UPDATE {table} SET "
@@ -413,20 +421,6 @@ class UserFrameTemplate(QWidget):
 
                 # Proceed with hiding the fields and resetting the view
                 self.update_content(user_id, title)
-                if title == "Profile":
-                    self.e_vremove.hide()
-                else:
-                    self.e_vremove.show()
-                self.e_vedit.show()
-                self.u_vname.show()
-                self.u_vphone.show()
-                self.u_vemail.show()
-                self.user_name.hide()
-                self.user_phone.hide()
-                self.user_email.hide()
-                self.image_button.hide()
-                self.e_vsave.hide()
-                self.e_vcancel.hide()
                 print("changes save")
 
             except mysql.connector.Error as e:
@@ -439,20 +433,6 @@ class UserFrameTemplate(QWidget):
         else:
             # User canceled the action, so reset the view without saving changes
             self.update_content(user_id, title)
-            if title == "Profile":
-                self.e_vremove.hide()
-            else:
-                self.e_vremove.show()
-            self.e_vedit.show()
-            self.u_vname.show()
-            self.u_vphone.show()
-            self.u_vemail.show()
-            self.user_name.hide()
-            self.user_phone.hide()
-            self.user_email.hide()
-            self.image_button.hide()
-            self.e_vsave.hide()
-            self.e_vcancel.hide()
             print("cancel")
 
 
@@ -468,28 +448,132 @@ class UserFrameTemplate(QWidget):
         self.image_button.show()
         self.e_vsave.show()
         self.e_vcancel.show()
+        # Show/hide password field based on the title and user context
+        if self.title_label.text() == "Profile" or (self.title_label.text() == "User : Lab Assistant" and self.main_window.uid == "LA0001"):
+            self.u_vpassword.hide()
+            self.user_password.show()
+        else:
+            # Hide password fields for all other cases
+            self.password_label.hide()
+            self.u_vpassword.hide()
+            self.user_password.hide()
         print("edit")
 
     def cancel(self, user_id, title):
+        # Get new user information
+        user_name = self.user_name.text()
+        phone = self.user_phone.text()
+        email = self.user_email.text()
+
+        # Get the original user information
+        original_name = self.u_vname.text()
+        original_phone = self.u_vphone.text()
+        original_email = self.u_vemail.text()
+        
+        # Track changes to be made in SQL
+        changes = []
+
+        # Compare name change
+        if user_name != original_name:
+            changes.append(f"Name: {original_name} -> {user_name}")
+
+        # Compare phone change
+        if phone != original_phone:
+            changes.append(f"Phone: {original_phone} -> {phone}")
+
+        # Compare email change
+        if email != original_email:
+            changes.append(f"Email: {original_email} -> {email}")
+
+
+        # If no changes, proceed with hiding the fields and resetting the view
+        if changes:
+            # Show the confirmation message box with the changes
+            changes_text = "\n".join(changes)
+            message_box = QMessageBox()
+            message_box.setWindowTitle("Discard Changes?")
+            message_box.setText(f"The following changes will be discarded:\n\n{changes_text}")
+            message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            result = message_box.exec_()
+
+            if result == QMessageBox.Ok:
+                self.update_content(user_id, title)
+                print("discard changes")
+                return
+
         self.update_content(user_id, title)
-        if title == "Profile":
-            self.e_vremove.hide()
-        else:
-            self.e_vremove.show()
-        self.e_vedit.show()
-        self.u_vname.show()
-        self.u_vphone.show()
-        self.u_vemail.show()
-        self.user_name.hide()
-        self.user_phone.hide()
-        self.user_email.hide()
-        self.image_button.hide()
-        self.e_vsave.hide()
-        self.e_vcancel.hide()
         print("cancel")
 
     def remove(self):
-        self.main_window.stacked_widget.setCurrentWidget(self.main_window.user_page)
+        # Check if there are any unreturned equipment
+        if self.borrow_layout.count() > 0:
+            # Show a message box indicating that unreturned equipment exist
+            message_box = QMessageBox()
+            message_box.setWindowTitle("Error")
+            message_box.setText("There are un resolved borrow. You cannot delete this user.")
+            message_box.setIcon(QMessageBox.Warning)
+            message_box.setStandardButtons(QMessageBox.Ok)
+            message_box.exec_()
+            return  # Exit if there are unreturned equipment
+
+        # If all equipment are returned, ask for delete confirmation
+        message_box = QMessageBox()
+        message_box.setWindowTitle("Confirm Deletion")
+        message_box.setText(f"Are you sure you want to delete this user?")
+        delete_button = message_box.addButton("Delete", QMessageBox.ActionRole)  # Custom "Delete" button
+        cancel_button = message_box.addButton(QMessageBox.Cancel)
+        message_box.setDefaultButton(cancel_button)
+
+        message_box.exec_()
+
+        # If the user presses cancel, do nothing
+        if message_box.clickedButton() == cancel_button:
+            return
+
+        # If the user confirms deletion
+        try:
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            if self.title_label.text() == "User : Lab Assistant":
+                # Extract numeric part of user ID
+                id_numeric_part = int(self.u_vid.text()[2:])
+                role = "lab_assistant"
+                field = "la_id"
+            else:
+                # Extract numeric part of user ID
+                id_numeric_part = int(self.u_vid.text()[1:])
+                role = "researcher"
+                field = "r_id"
+
+            # SQL Query to delete the equipment from the database
+            query = f"DELETE FROM {role} WHERE {field} = %s"
+            
+            # Execute the SQL query
+            cursor.execute(query, (id_numeric_part,))
+
+            # Commit the transaction
+            connection.commit()
+
+            print("User deleted successfully.")
+
+        except mysql.connector.Error as e:
+            # Handle any SQL or connection errors
+            print(f"An error occurred while connecting to the database: {e}")
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+
+        # After deletion, return to the equipment page
+        self.main_window.show_user()
         print("remove")
 
     def select_image(self):
@@ -502,18 +586,18 @@ class UserFrameTemplate(QWidget):
             self.set_rounded_pixmap(self.user_image, pixmap)
 
     def update_content(self, user_id, title):
+        # Handle case where the user is viewing their own profile
         if title == "User : Lab Assistant" and user_id == self.main_window.uid:
             title = "Profile"
-            self.main_window.side_nav_bar.move_indicator(self.main_window.side_nav_bar.findChild(QWidget, "Profile"))
+            self.main_window.side_nav_bar.move_indicator(
+                self.main_window.side_nav_bar.findChild(QWidget, "Profile")
+            )
 
+        # Update the title
         self.title_label.setText(title)
         content = self.fetch_content(user_id, title)
 
-        self.user_image.setFixedSize(300, 300)
-        self.user_image.setStyleSheet("""border:1px solid #ffffff""")
-        self.user_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        if content[4] is None or len(content[4]) == 0: 
+        if not content[4]:  # Default image if no image is available
             pixmap = self.get_default_image()
             self.user_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))
         else:
@@ -521,41 +605,122 @@ class UserFrameTemplate(QWidget):
             pixmap = QPixmap(QImage.fromData(image_data))
             self.set_rounded_pixmap(self.user_image, pixmap)
 
-        self.u_vname.setText    (content[1])
-        self.user_name.setText  (content[1])
-        self.u_vid.setText      (content[0])
-        self.u_vphone.setText   (content[2])
-        self.user_phone.setText (content[2])
-        self.u_vemail.setText   (content[3])
-        self.user_email.setText (content[3])
+        # Populate user details
+        self.u_vname.setText(content[1])
+        self.user_name.setText(content[1])
+        self.u_vid.setText(content[0])
+        self.u_vphone.setText(content[2])
+        self.user_phone.setText(content[2])
+        self.u_vemail.setText(content[3])
+        self.user_email.setText(content[3])
 
-        self.populate_borrow_list(self.fetch_borrow_list(user_id, title),title)
-            
-        if title == "User : Lab Assistant":
-            self.user_header.setText("Borrower ID")
-            if self.main_window.uid == "LA0001":
-                self.e_vedit.show()
-                self.e_vremove.show()  
-            else:
-                self.e_vedit.hide()
-                self.e_vremove.hide()
-        elif title == "User : Researcher":
-            self.user_header.setText("Approver ID")
-            self.e_vedit.show()
-            self.e_vremove.show()
-        elif title == "Profile":
-            self.user_header.setText("Borrower ID")
-            self.e_vedit.show()
-            self.e_vremove.hide()
-        else:
-            print('Error')
+        self.u_vname.show()
+        self.u_vphone.show()
+        self.u_vemail.show()
 
         self.user_name.hide()
         self.user_phone.hide()
         self.user_email.hide()
-        self.image_button.hide()
+
+        # Default setup for password
+        self.u_vpassword.setText("********")
+        self.user_password.setText("")
+
+        # Populate borrow list
+        self.populate_borrow_list(self.fetch_borrow_list(user_id, title), title)
+
+        # Configure UI elements based on the title
+        if title == "Profile":
+            self._setup_profile_view()
+        elif title == "User : Lab Assistant":
+            if self.main_window.uid == "LA0001":
+                self._setup_lab_assistant_admin_view()
+            else:
+                self._setup_lab_assistant_view()
+        elif title == "User : Researcher":
+            self._setup_researcher_view()
+
+    def _setup_profile_view(self):
+        # Show password field in profile view
+        self.password_label.show()
+        self.u_vpassword.show()
+        self.user_password.hide()
+
+        # Update layout for profile
+        self.details_layout.removeWidget(self.user_image)
+        self.details_layout.addWidget(self.user_image, 0, 0, 5, 1, Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.removeWidget(self.spacer)
+        self.details_layout.addWidget(self.spacer, 0, 1, 5, 1)
+
+        # Update buttons and header for profile
+        self.user_header.setText("Borrower ID")
+        self.e_vedit.show()
+        self.e_vremove.hide()
         self.e_vsave.hide()
         self.e_vcancel.hide()
+        self.image_button.hide()
+
+    def _setup_lab_assistant_admin_view(self):
+        # Show password field for admin (LA0001)
+        self.password_label.show()
+        self.u_vpassword.show()
+        self.user_password.hide()
+
+        # Update layout for admin view
+        self.details_layout.removeWidget(self.user_image)
+        self.details_layout.addWidget(self.user_image, 0, 0, 5, 1, Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.removeWidget(self.spacer)
+        self.details_layout.addWidget(self.spacer, 0, 1, 5, 1)
+
+        # Show edit and remove buttons
+        self.e_vedit.show()
+        self.e_vremove.show()
+        self.user_header.setText("Borrower ID")
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
+        self.image_button.hide()
+
+    def _setup_lab_assistant_view(self):
+        # Hide password and edit/remove buttons for regular lab assistants
+        self.password_label.hide()
+        self.u_vpassword.hide()
+        self.user_password.hide()
+
+        # Update layout for non-admin lab assistants
+        self.details_layout.removeWidget(self.user_image)
+        self.details_layout.addWidget(self.user_image, 0, 0, 4, 1, Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.removeWidget(self.spacer)
+        self.details_layout.addWidget(self.spacer, 0, 1, 4, 1)
+
+        # Hide edit and remove buttons
+        self.e_vedit.hide()
+        self.e_vremove.hide()
+        self.user_header.setText("Borrower ID")
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
+        self.image_button.hide()
+
+    def _setup_researcher_view(self):
+        # Show edit and remove buttons for researchers
+        self.e_vedit.show()
+        self.e_vremove.show()
+
+        # Update layout for researchers
+        self.details_layout.removeWidget(self.user_image)
+        self.details_layout.addWidget(self.user_image, 0, 0, 4, 1, Qt.AlignmentFlag.AlignLeft)
+        self.details_layout.removeWidget(self.spacer)
+        self.details_layout.addWidget(self.spacer, 0, 1, 4, 1)
+
+        # Set the appropriate header for researchers
+        self.user_header.setText("Approver ID")
+
+        # Hide password field for researchers
+        self.password_label.hide()
+        self.u_vpassword.hide()
+        self.user_password.hide()
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
+        self.image_button.hide()
 
     def fetch_content(self, user_id, title):
         try:
@@ -631,3 +796,22 @@ class UserFrameTemplate(QWidget):
         rounded_pixmap.setMask(mask.mask())
         painter.end()
         label.setPixmap(rounded_pixmap)
+
+    def update_camera_display(self, frame):
+        if frame is not None:
+            # Convert the frame to RGB format for Qt
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            height, width, channel = frame.shape
+            step = channel * width
+            qImg = QImage(frame.data, width, height, step, QImage.Format_RGB888)
+            self.user_image.setPixmap(QPixmap.fromImage(qImg))
+
+            # Save the current frame for future face recognition
+            self.current_frame = frame
+
+    def generate_random_characters(self):
+        # Combine uppercase letters and digits
+        characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        # Generate a random selection of the combined characters
+        random_characters = ''.join(random.choices(characters, k=30))
+        return random_characters

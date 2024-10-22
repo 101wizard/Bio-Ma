@@ -452,7 +452,6 @@ class EquipmentViewPage(QWidget):
         # Get the original displayed values
         original_name = self.e_vname.text()
         original_total_amount = int(self.e_vtotal.text())
-        in_stock_amount = int(self.e_vstock.text())
 
         # Check for image update
         if self.aepic_path:
@@ -463,25 +462,18 @@ class EquipmentViewPage(QWidget):
 
         # Track changes to be made in SQL
         changes = []
-        update_data = []
 
         # Compare name change
         if equipment_name != original_name:
             changes.append(f"Name: {original_name} -> {equipment_name}")
-            update_data.append(("e_name", equipment_name))
 
         # Compare total amount change
         if total_amount != original_total_amount:
             changes.append(f"Total Amount: {original_total_amount} -> {total_amount}")
-            # Adjust current amount based on the change in total amount
-            current_amount_diff = total_amount - original_total_amount
-            update_data.append(("e_amount", total_amount))
-            update_data.append(("e_curr_amount", (in_stock_amount + current_amount_diff)))
 
         # Compare image change
         if encoded_image is not None:
             changes.append("Image: Updated")
-            update_data.append(("e_img", encoded_image))
 
         if changes:
             # Show the confirmation message box with the changes
@@ -504,6 +496,19 @@ class EquipmentViewPage(QWidget):
                 self.e_vsave.hide()
                 self.e_vcancel.hide()
                 print("changes discarded")
+                return
+            
+        self.update_content(self.e_vid.text())
+        self.image_button.hide()
+        self.equipment_name.hide()
+        self.number_picker_widget.hide()
+        self.e_vname.show()
+        self.e_vtotal.show()
+        self.e_vedit.show()
+        self.e_vremove.show()
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
+        print("cancel")
 
     def edit(self):
         self.image_button.show()

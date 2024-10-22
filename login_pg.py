@@ -256,15 +256,23 @@ class LoginPage(QWidget):
             known_face_ids = []
 
             for (la_id, la_img) in cursor.fetchall():
-                # Convert the BLOB data (base64 string) back to an image
-                img_data = base64.b64decode(la_img)  # Decode base64 to bytes
-                np_array = np.frombuffer(img_data, np.uint8)  # Convert bytes to numpy array
-                img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)  # Decode image to OpenCV format
-
-                # Get the face encoding from the image
-                face_encoding = face_recognition.face_encodings(img)[0]  # Assuming one face per image
-                known_face_encodings.append(face_encoding)
-                known_face_ids.append(la_id)
+                if la_img is None:  # Skip if the image is null
+                    continue
+                
+                try:
+                    # Convert the BLOB data (base64 string) back to an image
+                    img_data = base64.b64decode(la_img)  # Decode base64 to bytes
+                    np_array = np.frombuffer(img_data, np.uint8)  # Convert bytes to numpy array
+                    img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)  # Decode image to OpenCV format
+                    
+                    # Get the face encoding from the image
+                    face_encodings = face_recognition.face_encodings(img)
+                    
+                    if face_encodings:  # Ensure there's at least one face encoding
+                        known_face_encodings.append(face_encodings[0])  # Append the first face encoding
+                        known_face_ids.append(la_id)  # Append the corresponding ID
+                except Exception as e:
+                    print(f"Error processing image for ID {la_id}: {e}")
 
             # Ensure the current frame contains at least one face
             if len(face_recognition.face_encodings(frame)) > 0:
