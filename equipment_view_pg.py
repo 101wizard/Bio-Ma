@@ -445,16 +445,65 @@ class EquipmentViewPage(QWidget):
             print("Save canceled, no changes applied.")
 
     def cancel(self):
-        self.image_button.hide()
-        self.equipment_name.hide()
-        self.number_picker_widget.hide()
-        self.e_vname.show()
-        self.e_vtotal.show()
-        self.e_vedit.show()
-        self.e_vremove.show()
-        self.e_vsave.hide()
-        self.e_vcancel.hide()
-        print("cancel")
+        # Get equipment name and total amount
+        equipment_name = self.equipment_name.text()
+        total_amount = int(self.amount_field.text())
+
+        # Get the original displayed values
+        original_name = self.e_vname.text()
+        original_total_amount = int(self.e_vtotal.text())
+        in_stock_amount = int(self.e_vstock.text())
+
+        # Check for image update
+        if self.aepic_path:
+            image = open(self.aepic_path, 'rb').read()
+            encoded_image = base64.b64encode(image)
+        else:
+            encoded_image = None
+
+        # Track changes to be made in SQL
+        changes = []
+        update_data = []
+
+        # Compare name change
+        if equipment_name != original_name:
+            changes.append(f"Name: {original_name} -> {equipment_name}")
+            update_data.append(("e_name", equipment_name))
+
+        # Compare total amount change
+        if total_amount != original_total_amount:
+            changes.append(f"Total Amount: {original_total_amount} -> {total_amount}")
+            # Adjust current amount based on the change in total amount
+            current_amount_diff = total_amount - original_total_amount
+            update_data.append(("e_amount", total_amount))
+            update_data.append(("e_curr_amount", (in_stock_amount + current_amount_diff)))
+
+        # Compare image change
+        if encoded_image is not None:
+            changes.append("Image: Updated")
+            update_data.append(("e_img", encoded_image))
+
+        if changes:
+            # Show the confirmation message box with the changes
+            changes_text = "\n".join(changes)
+            message_box = QMessageBox()
+            message_box.setWindowTitle("Discard Changes?")
+            message_box.setText(f"The following changes will be discarded:\n\n{changes_text}")
+            message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            result = message_box.exec_()
+
+            if result == QMessageBox.Ok:
+                self.update_content(self.e_vid.text())
+                self.image_button.hide()
+                self.equipment_name.hide()
+                self.number_picker_widget.hide()
+                self.e_vname.show()
+                self.e_vtotal.show()
+                self.e_vedit.show()
+                self.e_vremove.show()
+                self.e_vsave.hide()
+                self.e_vcancel.hide()
+                print("changes discarded")
 
     def edit(self):
         self.image_button.show()
@@ -591,25 +640,19 @@ class EquipmentViewPage(QWidget):
         self.populate_borrow_list(self.fetch_borrow_list(equipment_id))
 
         if self.main_window.uid == "LA0001":
-            self.e_vname.show()
-            self.e_vtotal.show()
-            self.image_button.hide()
-            self.number_picker_widget.hide()
-            self.equipment_name.hide()
-            self.e_vcancel.hide()
-            self.e_vsave.hide()
             self.e_vedit.show()
             self.e_vremove.show()
         else:
-            self.e_vname.show()
-            self.e_vtotal.show()
-            self.image_button.hide()
-            self.number_picker_widget.hide()
-            self.equipment_name.hide()
-            self.e_vcancel.hide()
-            self.e_vsave.hide()
             self.e_vedit.hide()
             self.e_vremove.hide()
+
+        self.e_vname.show()
+        self.e_vtotal.show()
+        self.image_button.hide()
+        self.number_picker_widget.hide()
+        self.equipment_name.hide()
+        self.e_vcancel.hide()
+        self.e_vsave.hide()
 
     def fetch_content(self, equipment_id):
         try:

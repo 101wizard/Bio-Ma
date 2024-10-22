@@ -23,6 +23,9 @@ class UserFrameTemplate(QWidget):
                                           padding: 15px;
                                           font-size: 20px;
                                           font-weight: bold;""")
+        
+        #Picture variable
+        self.aepic_path = ''
 
         # Widget content area
         widget = QWidget()
@@ -95,9 +98,12 @@ class UserFrameTemplate(QWidget):
 
         # Add content to the grid next to the labels
         details_layout.addWidget(self.u_vname, 0, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        details_layout.addWidget(self.user_name, 0, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         details_layout.addWidget(self.u_vid, 1, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         details_layout.addWidget(self.u_vphone, 2, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        details_layout.addWidget(self.user_phone, 2, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         details_layout.addWidget(self.u_vemail, 3, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        details_layout.addWidget(self.user_email, 3, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
 
         layout.addLayout(details_layout)
 
@@ -312,6 +318,13 @@ class UserFrameTemplate(QWidget):
         else:
             self.e_vremove.show()
         self.e_vedit.show()
+        self.u_vname.show()
+        self.u_vphone.show()
+        self.u_vemail.show()
+        self.user_name.hide()
+        self.user_phone.hide()
+        self.user_email.hide()
+        self.image_button.hide()
         self.e_vsave.hide()
         self.e_vcancel.hide()
         print("save")
@@ -319,6 +332,13 @@ class UserFrameTemplate(QWidget):
     def edit(self):
         self.e_vedit.hide()
         self.e_vremove.hide()
+        self.u_vname.hide()
+        self.u_vphone.hide()
+        self.u_vemail.hide()
+        self.user_name.show()
+        self.user_phone.show()
+        self.user_email.show()
+        self.image_button.show()
         self.e_vsave.show()
         self.e_vcancel.show()
         print("edit")
@@ -329,6 +349,13 @@ class UserFrameTemplate(QWidget):
         else:
             self.e_vremove.show()
         self.e_vedit.show()
+        self.u_vname.show()
+        self.u_vphone.show()
+        self.u_vemail.show()
+        self.user_name.hide()
+        self.user_phone.hide()
+        self.user_email.hide()
+        self.image_button.hide()
         self.e_vsave.hide()
         self.e_vcancel.hide()
         print("cancel")
@@ -366,40 +393,41 @@ class UserFrameTemplate(QWidget):
             pixmap = QPixmap(QImage.fromData(image_data))
             self.set_rounded_pixmap(self.user_image, pixmap)
 
-        self.u_vname.setText (content[1])
-        self.u_vid.setText   (content[0])
-        self.u_vphone.setText(content[2])
-        self.u_vemail.setText(content[3])
+        self.u_vname.setText    (content[1])
+        self.user_name.setText  (content[1])
+        self.u_vid.setText      (content[0])
+        self.u_vphone.setText   (content[2])
+        self.user_phone.setText (content[2])
+        self.u_vemail.setText   (content[3])
+        self.user_email.setText (content[3])
 
         self.populate_borrow_list(self.fetch_borrow_list(user_id, title),title)
             
         if title == "User : Lab Assistant":
+            self.user_header.setText("Borrower ID")
             if self.main_window.uid == "LA0001":
-                self.user_header.setText("Borrower ID")
                 self.e_vedit.show()
-                self.e_vremove.show()
-                self.e_vsave.hide()
-                self.e_vcancel.hide()
+                self.e_vremove.show()  
             else:
-                self.user_header.setText("Borrower ID")
                 self.e_vedit.hide()
                 self.e_vremove.hide()
-                self.e_vsave.hide()
-                self.e_vcancel.hide()
         elif title == "User : Researcher":
             self.user_header.setText("Approver ID")
-            self.e_vsave.hide()
-            self.e_vcancel.hide()
             self.e_vedit.show()
             self.e_vremove.show()
         elif title == "Profile":
             self.user_header.setText("Borrower ID")
-            self.e_vsave.hide()
-            self.e_vcancel.hide()
             self.e_vedit.show()
             self.e_vremove.hide()
         else:
             print('Error')
+
+        self.user_name.hide()
+        self.user_phone.hide()
+        self.user_email.hide()
+        self.image_button.hide()
+        self.e_vsave.hide()
+        self.e_vcancel.hide()
 
     def fetch_content(self, user_id, title):
         try:
