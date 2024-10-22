@@ -1,10 +1,11 @@
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea,
-    QFrame, QSpacerItem, QSizePolicy, QLineEdit, QGridLayout, QFileDialog
+    QFrame, QSpacerItem, QSizePolicy, QLineEdit, QGridLayout, QFileDialog,QMessageBox
 )
 from PySide6.QtCore import Qt, QByteArray, QSize
 from PySide6.QtGui import QPixmap, QPainter, QImage
-import qtawesome as qta 
+import qtawesome as qta
+import base64
 import mysql.connector
 
 class UserFrameTemplate(QWidget):
@@ -24,8 +25,7 @@ class UserFrameTemplate(QWidget):
                                           font-size: 20px;
                                           font-weight: bold;""")
         
-        #Picture variable
-        self.aepic_path = ''
+        self.cam_enabled = False
 
         # Widget content area
         widget = QWidget()
@@ -312,22 +312,149 @@ class UserFrameTemplate(QWidget):
         print(f"Viewing Borrow ID: {bid}")
 
     def save(self, user_id, title):
-        self.update_content(user_id, title)
-        if title == "Profile":
-            self.e_vremove.hide()
+        # Determine table based on title
+        if title == "User : Lab Assistant" or title == "Profile":
+            id_numeric_part = int(self.u_vid.text()[2:])
+            table = "lab_assistant"
+            id_field = "la_id"
+            name_field = "la_name"
+            phone_field = "la_phone"
+            email_field = "la_email"
+        elif title == "User : Researcher":
+            id_numeric_part = int(self.u_vid.text()[1:])
+            table = "researcher"
+            id_field = "r_id"
+            name_field = "r_name"
+            phone_field = "r_phone"
+            email_field = "r_email"
         else:
-            self.e_vremove.show()
-        self.e_vedit.show()
-        self.u_vname.show()
-        self.u_vphone.show()
-        self.u_vemail.show()
-        self.user_name.hide()
-        self.user_phone.hide()
-        self.user_email.hide()
-        self.image_button.hide()
-        self.e_vsave.hide()
-        self.e_vcancel.hide()
-        print("save")
+            print(f"Unknown title: {title}")
+            return
+
+        # Get new user information
+        user_name = self.user_name.text()
+        phone = self.user_phone.text()
+        email = self.user_email.text()
+
+        # Get the original user information
+        original_name = self.u_vname.text()
+        original_phone = self.u_vphone.text()
+        original_email = self.u_vemail.text()
+        
+        # Track changes to be made in SQL
+        changes = []
+        update_data = []
+
+        # Compare name change
+        if user_name != original_name:
+            changes.append(f"Name: {original_name} -> {user_name}")
+            update_data.append((name_field, user_name))
+
+        # Compare phone change
+        if phone != original_phone:
+            changes.append(f"Phone: {original_phone} -> {phone}")
+            update_data.append((phone_field, phone))
+
+        # Compare email change
+        if email != original_email:
+            changes.append(f"Email: {original_email} -> {email}")
+            update_data.append((email_field, email))
+
+
+        # If no changes, proceed with hiding the fields and resetting the view
+        if not changes:
+            self.update_content(user_id, title)
+            if title == "Profile":
+                self.e_vremove.hide()
+            else:
+                self.e_vremove.show()
+            self.e_vedit.show()
+            self.u_vname.show()
+            self.u_vphone.show()
+            self.u_vemail.show()
+            self.user_name.hide()
+            self.user_phone.hide()
+            self.user_email.hide()
+            self.image_button.hide()
+            self.e_vsave.hide()
+            self.e_vcancel.hide()
+            print("cancel")
+
+        # Prepare update query and data
+        update_query = f"UPDATE {table} SET "
+        update_query += ", ".join([f"{field} = %s" for field, _ in update_data])
+        update_query += f" WHERE {id_field} = %s"
+        query_data = [value for _, value in update_data] + [id_numeric_part]
+
+        # Show the confirmation message box with the changes
+        changes_text = "\n".join(changes)
+        message_box = QMessageBox()
+        message_box.setWindowTitle("Confirm Changes")
+        message_box.setText(f"The following changes will be applied:\n\n{changes_text}")
+        message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        result = message_box.exec_()
+
+        # If user presses OK, proceed with the update
+        if result == QMessageBox.Ok:
+            try:
+                connection = mysql.connector.connect(
+                    host="localhost",
+                    user="root",
+                    password="",
+                    database="test"
+                )
+                cursor = connection.cursor()
+
+                # Execute the update query
+                cursor.execute(update_query, query_data)
+
+                # Commit the transaction
+                connection.commit()
+
+                # Proceed with hiding the fields and resetting the view
+                self.update_content(user_id, title)
+                if title == "Profile":
+                    self.e_vremove.hide()
+                else:
+                    self.e_vremove.show()
+                self.e_vedit.show()
+                self.u_vname.show()
+                self.u_vphone.show()
+                self.u_vemail.show()
+                self.user_name.hide()
+                self.user_phone.hide()
+                self.user_email.hide()
+                self.image_button.hide()
+                self.e_vsave.hide()
+                self.e_vcancel.hide()
+                print("changes save")
+
+            except mysql.connector.Error as e:
+                print(f"An error occurred while connecting to the database: {e}")
+
+            finally:
+                if connection.is_connected():
+                    cursor.close()
+                    connection.close()
+        else:
+            # User canceled the action, so reset the view without saving changes
+            self.update_content(user_id, title)
+            if title == "Profile":
+                self.e_vremove.hide()
+            else:
+                self.e_vremove.show()
+            self.e_vedit.show()
+            self.u_vname.show()
+            self.u_vphone.show()
+            self.u_vemail.show()
+            self.user_name.hide()
+            self.user_phone.hide()
+            self.user_email.hide()
+            self.image_button.hide()
+            self.e_vsave.hide()
+            self.e_vcancel.hide()
+            print("cancel")
+
 
     def edit(self):
         self.e_vedit.hide()
@@ -344,6 +471,7 @@ class UserFrameTemplate(QWidget):
         print("edit")
 
     def cancel(self, user_id, title):
+        self.update_content(user_id, title)
         if title == "Profile":
             self.e_vremove.hide()
         else:
