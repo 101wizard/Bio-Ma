@@ -366,15 +366,8 @@ class EquipmentViewPage(QWidget):
         # If no changes, proceed with hiding the fields and resetting the view
         if not changes:
             self.update_content(self.e_vid.text())
-            self.image_button.hide()
-            self.equipment_name.hide()
-            self.number_picker_widget.hide()
-            self.e_vname.show()
-            self.e_vtotal.show()
             self.e_vedit.show()
             self.e_vremove.show()
-            self.e_vsave.hide()
-            self.e_vcancel.hide()
             print("No changes detected, exiting save.")
             return
 
@@ -411,15 +404,8 @@ class EquipmentViewPage(QWidget):
 
                 # Proceed with hiding the fields and resetting the view
                 self.update_content(self.e_vid.text())
-                self.image_button.hide()
-                self.equipment_name.hide()
-                self.number_picker_widget.hide()
-                self.e_vname.show()
-                self.e_vtotal.show()
                 self.e_vedit.show()
                 self.e_vremove.show()
-                self.e_vsave.hide()
-                self.e_vcancel.hide()
                 print("Save successful, changes applied.")
 
             except mysql.connector.Error as e:
@@ -433,15 +419,8 @@ class EquipmentViewPage(QWidget):
         else:
             # User canceled the action, so reset the view without saving changes
             self.update_content(self.e_vid.text())
-            self.image_button.hide()
-            self.equipment_name.hide()
-            self.number_picker_widget.hide()
-            self.e_vname.show()
-            self.e_vtotal.show()
             self.e_vedit.show()
             self.e_vremove.show()
-            self.e_vsave.hide()
-            self.e_vcancel.hide()
             print("Save canceled, no changes applied.")
 
     def cancel(self):
@@ -486,29 +465,12 @@ class EquipmentViewPage(QWidget):
 
             if result == QMessageBox.Ok:
                 self.update_content(self.e_vid.text())
-                self.image_button.hide()
-                self.equipment_name.hide()
-                self.number_picker_widget.hide()
-                self.e_vname.show()
-                self.e_vtotal.show()
                 self.e_vedit.show()
                 self.e_vremove.show()
-                self.e_vsave.hide()
-                self.e_vcancel.hide()
                 print("changes discarded")
                 return
             
-        self.update_content(self.e_vid.text())
-        self.image_button.hide()
-        self.equipment_name.hide()
-        self.number_picker_widget.hide()
-        self.e_vname.show()
-        self.e_vtotal.show()
-        self.e_vedit.show()
-        self.e_vremove.show()
-        self.e_vsave.hide()
-        self.e_vcancel.hide()
-        print("cancel")
+            print("cancel")
 
     def edit(self):
         self.image_button.show()

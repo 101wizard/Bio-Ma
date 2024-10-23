@@ -341,8 +341,8 @@ class AddUserPage(QWidget):
         self.user_image.setPixmap(QPixmap.fromImage(qImg))
 
     def capture_image(self):
-        #self.camera_thread.stop()
-        cap = cv2.VideoCapture(1)  # Use the appropriate camera index (0, 1, etc.)
+        self.main_window.camera_thread.stop()
+        cap = cv2.VideoCapture(0)  # Use the appropriate camera index (0, 1, etc.)
         
         if not cap.isOpened():
             QMessageBox.warning(self, 'Error', 'Could not open camera!')
@@ -359,6 +359,8 @@ class AddUserPage(QWidget):
         _, buffer = cv2.imencode('.jpg', frame)  # Encode as JPEG
         img_bytes = buffer.tobytes()  # Convert to bytes
         encoded_image = base64.b64encode(img_bytes).decode('utf-8')  # Convert to base64 string
+
+        self.main_window.start_camera()
 
         return encoded_image
 

@@ -30,8 +30,7 @@ class MainWindow(QMainWindow):
         # Track the current signal handler
         self.current_signal_handler = None
 
-        self.camera_thread = CameraThread()
-        self.camera_thread.start()
+        self.start_camera()
 
         # Create the main layout
         main_widget = QWidget()
@@ -150,6 +149,10 @@ class MainWindow(QMainWindow):
         if self.current_signal_handler != None:
             self.camera_thread.frameCaptured.disconnect(self.current_signal_handler)
         self.current_signal_handler = None
+
+    def start_camera(self):
+        self.camera_thread = CameraThread()
+        self.camera_thread.start()
 
     def logout(self):
         self.camera_thread.stop()

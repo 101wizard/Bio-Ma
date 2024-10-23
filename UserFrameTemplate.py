@@ -62,7 +62,7 @@ class UserFrameTemplate(QWidget):
                 background-color: #383838;
             }
         """)
-        self.image_button.clicked.connect(self.select_image)
+        self.image_button.clicked.connect(self.on_off_cam)
 
         # Stack the image and button using a layout
         image_layout = QVBoxLayout(self.user_image)
@@ -333,6 +333,7 @@ class UserFrameTemplate(QWidget):
             email_field = "la_email"
             salt_field = "salt"
             hashed_field = "password"
+            image_field = "la_img"
         elif title == "User : Researcher":
             id_numeric_part = int(self.u_vid.text()[1:])
             table = "researcher"
@@ -340,6 +341,7 @@ class UserFrameTemplate(QWidget):
             name_field = "r_name"
             phone_field = "r_phone"
             email_field = "r_email"
+            image_field = "r_img"
         else:
             print(f"Unknown title: {title}")
             return
@@ -382,12 +384,17 @@ class UserFrameTemplate(QWidget):
                 encoded_password = hashlib.sha256(salt.encode() + self.user_password.text().encode()).hexdigest()
                 update_data.append((hashed_field, encoded_password))
 
+        # If cam is enabled
+        if self.cam_enabled == True:
+            changes.append(f"Face Data: **new data**")
+            update_data.append((image_field, self.capture_image()))
+
         # If no changes, proceed with hiding the fields and resetting the view
         if not changes:
             self.update_content(user_id, title)
             print("No changes detected!")
             return
-
+        
         # Prepare update query and data
         update_query = f"UPDATE {table} SET "
         update_query += ", ".join([f"{field} = %s" for field, _ in update_data])
@@ -414,6 +421,7 @@ class UserFrameTemplate(QWidget):
                 cursor = connection.cursor()
 
                 # Execute the update query
+
                 cursor.execute(update_query, query_data)
 
                 # Commit the transaction
@@ -435,7 +443,6 @@ class UserFrameTemplate(QWidget):
             self.update_content(user_id, title)
             print("cancel")
 
-
     def edit(self):
         self.e_vedit.hide()
         self.e_vremove.hide()
@@ -445,7 +452,12 @@ class UserFrameTemplate(QWidget):
         self.user_name.show()
         self.user_phone.show()
         self.user_email.show()
-        self.image_button.show()
+        if self.title_label.text() == "Profile" and self.main_window.uid == "LA0001":
+            self.image_button.hide()
+        elif self.title_label.text() == "Profile" or self.title_label.text() == "User : Researcher":
+            self.image_button.show()
+        else:
+            print("error")
         self.e_vsave.show()
         self.e_vcancel.show()
         # Show/hide password field based on the title and user context
@@ -485,6 +497,14 @@ class UserFrameTemplate(QWidget):
         if email != original_email:
             changes.append(f"Email: {original_email} -> {email}")
 
+        # Compare password change
+        if title == "User : Lab Assistant" or title == "Profile":
+            if self.user_password.text() != '':
+                changes.append(f"Password: **new password**")
+
+        # If cam is enabled
+        if self.cam_enabled == True:
+            changes.append(f"Face Data: **new data**")
 
         # If no changes, proceed with hiding the fields and resetting the view
         if changes:
@@ -501,8 +521,10 @@ class UserFrameTemplate(QWidget):
                 print("discard changes")
                 return
 
-        self.update_content(user_id, title)
-        print("cancel")
+            print("cancel")
+        else:
+            self.update_content(user_id, title)
+            print("no changes")
 
     def remove(self):
         # Check if there are any unreturned equipment
@@ -600,10 +622,14 @@ class UserFrameTemplate(QWidget):
         if not content[4]:  # Default image if no image is available
             pixmap = self.get_default_image()
             self.user_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))
+            self.image_data = None
         else:
-            image_data = QByteArray.fromBase64(content[4])
-            pixmap = QPixmap(QImage.fromData(image_data))
+            self.image_data = QByteArray.fromBase64(content[4])
+            pixmap = QPixmap(QImage.fromData(self.image_data))
             self.set_rounded_pixmap(self.user_image, pixmap)
+
+        if self.cam_enabled == True:
+            self.on_off_cam()
 
         # Populate user details
         self.u_vname.setText(content[1])
@@ -797,6 +823,28 @@ class UserFrameTemplate(QWidget):
         painter.end()
         label.setPixmap(rounded_pixmap)
 
+    def on_off_cam(self):
+        if self.cam_enabled == False:
+            self.main_window.camera_thread.frameCaptured.connect(self.update_camera_display)
+            self.main_window.current_signal_handler = self.update_camera_display
+            self.cam_enabled = True
+            print("turn on")
+            return
+        elif self.cam_enabled == True:
+            self.main_window.clear_camera_connections()
+            if not self.image_data:  # Default image if no image is available
+                pixmap = self.get_default_image()
+                self.user_image.setPixmap(pixmap.scaled(100, 100, Qt.KeepAspectRatio))
+            else:
+                pixmap = QPixmap(QImage.fromData(self.image_data))
+                self.set_rounded_pixmap(self.user_image, pixmap)
+            self.cam_enabled = False
+            print("turn off")
+            return
+        else:
+            print('error')
+
+
     def update_camera_display(self, frame):
         if frame is not None:
             # Convert the frame to RGB format for Qt
@@ -806,12 +854,33 @@ class UserFrameTemplate(QWidget):
             qImg = QImage(frame.data, width, height, step, QImage.Format_RGB888)
             self.user_image.setPixmap(QPixmap.fromImage(qImg))
 
-            # Save the current frame for future face recognition
-            self.current_frame = frame
-
     def generate_random_characters(self):
         # Combine uppercase letters and digits
         characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
         # Generate a random selection of the combined characters
         random_characters = ''.join(random.choices(characters, k=30))
         return random_characters
+    
+    def capture_image(self):
+        self.main_window.camera_thread.stop()
+        cap = cv2.VideoCapture(0)  # Use the appropriate camera index (0, 1, etc.)
+        
+        if not cap.isOpened():
+            QMessageBox.warning(self, 'Error', 'Could not open camera!')
+            return
+
+        ret, frame = cap.read()  # Capture a frame
+        cap.release()  # Release the camera
+
+        if not ret:
+            QMessageBox.warning(self, 'Error', 'Failed to capture image!')
+            return
+
+        # Encode image to base64
+        _, buffer = cv2.imencode('.jpg', frame)  # Encode as JPEG
+        img_bytes = buffer.tobytes()  # Convert to bytes
+        encoded_image = base64.b64encode(img_bytes).decode('utf-8')  # Convert to base64 string
+
+        self.main_window.start_camera()
+        
+        return encoded_image

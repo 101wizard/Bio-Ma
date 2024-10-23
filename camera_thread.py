@@ -1,5 +1,7 @@
 from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import QMessageBox
 import cv2
+import base64
 
 class CameraThread(QThread):
     frameCaptured = Signal(object)
