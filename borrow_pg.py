@@ -75,7 +75,7 @@ class BorrowPage(QWidget):
         self.layout().addWidget(content_widget)
 
         # Confirm button
-        self.confirm_button = QPushButton("Confirm")
+        self.confirm_button = QPushButton("Borrow")
         self.confirm_button.setFixedSize(100, 40)
         self.confirm_button.setStyleSheet("background-color: #ffffff; color:#000000; font-size: 16px; padding: 10px; border-radius: 5px;")
         self.confirm_button.clicked.connect(self.confirm_selection)
@@ -268,6 +268,27 @@ class BorrowPage(QWidget):
             print("No equipment selected to borrow.")
             return
         
+        # Create a formatted string of selected items for the message box
+        item_list = "\n".join([f"Equipment ID: {eid}, Amount: {amount}" for eid, amount in selected_items.items()])
+        message = f"The following items will be borrowed:\n{item_list}\n\nDo you want to proceed?"
+
+            # Show the confirmation dialog
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Confirm Borrow")
+        msg_box.setText(message)
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+        # Change button text for "Yes" and "No"
+        msg_box.button(QMessageBox.Yes).setText("Confirm")
+        msg_box.button(QMessageBox.No).setText("Cancel")
+
+        reply = msg_box.exec_()
+
+        if reply == QMessageBox.No:  # User clicked "Cancel"
+            self.main_window.show_dashboard()
+            print("Borrow operation canceled by the user.")
+            return  # Skip the operation if the user clicked "Cancel"
+            
         try:
             # Step 1: Connect to the database
             connection = mysql.connector.connect(
