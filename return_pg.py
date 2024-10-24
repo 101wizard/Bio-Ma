@@ -344,9 +344,60 @@ class ReturnPage(QWidget):
             
             # Now return_list contains tuples of (equipment_id, return_amount, missing_amount)
             print(return_list)
-            return return_list
+
+            try:
+                # Step 1: Connect to the database
+                connection = mysql.connector.connect(
+                    host="localhost",
+                    user="root",
+                    password="",
+                    database="test"
+                )
+                cursor = connection.cursor()
+
+                # Step 2: Insert into the 'borrow' table
+                delete_borrowed_equipment_query = "DELETE FROM borrowed_equipment WHERE borrow_id = ?"
+                cursor.execute(delete_borrowed_equipment_query, (borrow_id,))
+                connection.commit()  
+
+                delete_borrow_query = "DELETE FROM borrow WHERE borrow_id = ?"
+                cursor.execute(delete_borrow_query, (borrow_id,))
+                connection.commit()
+
+                for equipment_id, return_amount, missing_amount in return_list:
+                    # Convert equipment_id from "E000?" to integer
+                    equipment_int_id = int(equipment_id[1:])
+
+                    # Update the equipment amounts
+                    update_equipment_query = """
+                        UPDATE equipment
+                        SET e_amount = e_amount - ?,
+                            e_curr_amount = e_curr_amount + ?
+                        WHERE e_id = ?
+                    """
+
+                    cursor.execute(update_equipment_query, (missing_amount, return_amount, equipment_int_id))
+                    connection.commit
+
+                print("Transaction successful, database updated.")
+
+            except mysql.connector.Error as e:
+                # Handle database errors
+                QMessageBox.warning(self, "Database Error", f"An error occurred while processing the transaction: {e}")
+                print(f"Error: {e}")
+                return
+
+            finally:
+                # Ensure the connection is closed properly
+                if connection.is_connected():
+                    cursor.close()
+                    connection.close()
+
+            self.main_window.show_dashboard()
+
         print("default no selection")
 
+       
     def get_default_image(self):
         # Create a default image using a Qt Awesome icon
         icon = qta.icon('fa.file-image-o', color='white')  # Use Qt Awesome icon
