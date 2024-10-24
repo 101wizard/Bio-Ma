@@ -166,24 +166,29 @@ class BorrowReturnLoadPage(QWidget):
             known_face_encodings = []
             known_face_ids = []
 
-            for (la_id, la_img) in cursor.fetchall():
+            for (r_id, r_img) in cursor.fetchall():
                 # Convert the BLOB data (base64 string) back to an image
-                img_data = base64.b64decode(la_img)  # Decode base64 to bytes
+                img_data = base64.b64decode(r_img)  # Decode base64 to bytes
                 np_array = np.frombuffer(img_data, np.uint8)  # Convert bytes to numpy array
                 img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)  # Decode image to OpenCV format
 
-                # Get the face encoding from the image
-                face_encoding = face_recognition.face_encodings(img)[0]  # Assuming one face per image
-                known_face_encodings.append(face_encoding)
-                known_face_ids.append(la_id)
+                # Get the face encoding from the image (check if encoding exists)
+                face_encodings = face_recognition.face_encodings(img)
+                if len(face_encodings) > 0:
+                    face_encoding = face_encodings[0]
+                    known_face_encodings.append(face_encoding)
+                    known_face_ids.append(r_id)
+                else:
+                    print(f"No face detected in researcher image with ID {r_id}")
 
             # Ensure the current frame contains at least one face
-            if len(face_recognition.face_encodings(frame)) > 0:
-                unknown_face_encoding = face_recognition.face_encodings(frame)[0]
+            unknown_face_encodings = face_recognition.face_encodings(frame)
+            if len(unknown_face_encodings) > 0:
+                unknown_face_encoding = unknown_face_encodings[0]
 
                 # Compare the captured face with known faces from the database
                 matches = face_recognition.compare_faces(known_face_encodings, unknown_face_encoding)
-
+                
                 if True in matches:
                     # Return the ID of the first matched face in the format LAxxxx
                     match_index = matches.index(True)
@@ -297,7 +302,7 @@ class BorrowReturnLoadPage(QWidget):
             cursor.execute(query, (researcher_id,))
             borrow_due_dates = cursor.fetchall()
 
-            has_overdue = any(due_date < datetime.datetime.now() for due_date, in borrow_due_dates)
+            has_overdue = any(due_date.date() <= datetime.datetime.now().date() for due_date, in borrow_due_dates)
 
             if has_overdue:
                 self.confirm_button.setEnabled(False)
