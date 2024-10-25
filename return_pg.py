@@ -95,6 +95,7 @@ class ReturnPage(QWidget):
         self.all_equipment = self.fetch_equipment_list()
         self.borrow_list = self.fetch_borrow_list()
         self.populate_borrow_id_dropdown()
+        self.clear_list()
         
     def fetch_equipment_list(self):
         try:
@@ -195,6 +196,13 @@ class ReturnPage(QWidget):
         self.borrow_id_dropdown.setCurrentIndex(0)
 
     def populate_equipment_list(self, equipment_list):
+        self.clear_list()
+
+        # Add equipment items to layout
+        for img, name, amount, equipment_id in equipment_list:
+            self.add_equipment_item(img, name, amount, equipment_id)
+
+    def clear_list(self):
         # Clear existing equipment items
         while self.equipment_layout.count() > 0: 
             item = self.equipment_layout.takeAt(0)  # Take the first item
@@ -202,10 +210,6 @@ class ReturnPage(QWidget):
                 item.widget().deleteLater()  # Delete the widget
 
         self.selected_amounts = {}
-
-        # Add equipment items to layout
-        for img, name, amount, equipment_id in equipment_list:
-            self.add_equipment_item(img, name, amount, equipment_id)
 
     def add_equipment_item(self, img, name, borrowed_amount, equipment_id):
         equipment_frame = QFrame()
@@ -337,8 +341,8 @@ class ReturnPage(QWidget):
             return_list = []
         
             for equipment_id, (return_amount_field, missing_amount_field) in self.selected_amounts.items():
-                return_amount = int(return_amount_field.text()) if return_amount_field.text() else 0
-                missing_amount = int(missing_amount_field.text()) if missing_amount_field.text() else 0
+                return_amount = int(return_amount_field.text())
+                missing_amount = int(missing_amount_field.text())
                 
                 return_list.append((equipment_id, return_amount, missing_amount))
             
@@ -356,28 +360,47 @@ class ReturnPage(QWidget):
                 cursor = connection.cursor()
 
                 # Step 2: Insert into the 'borrow' table
-                delete_borrowed_equipment_query = "DELETE FROM borrowed_equipment WHERE borrow_id = ?"
+                delete_borrowed_equipment_query = "DELETE FROM borrowed_equipment WHERE borrow_id = %s"
                 cursor.execute(delete_borrowed_equipment_query, (borrow_id,))
                 connection.commit()  
 
-                delete_borrow_query = "DELETE FROM borrow WHERE borrow_id = ?"
+                delete_borrow_query = "DELETE FROM borrow WHERE borrow_id = %s"
                 cursor.execute(delete_borrow_query, (borrow_id,))
                 connection.commit()
+                
+                # Prepare the SQL query using CASE to handle multiple equipment updates
+                equipment_ids = [int(equipment_id[1:]) for equipment_id, _, _ in return_list]
+                update_equipment_query = """
+                    UPDATE equipment
+                    SET
+                        e_amount = e_amount - CASE e_id
+                            {e_amount_cases}
+                            ELSE e_amount END,
+                        e_curr_amount = e_curr_amount + CASE e_id
+                            {e_curr_amount_cases}
+                            ELSE e_curr_amount END
+                    WHERE e_id IN ({equipment_ids})
+                """
 
-                for equipment_id, return_amount, missing_amount in return_list:
-                    # Convert equipment_id from "E000?" to integer
-                    equipment_int_id = int(equipment_id[1:])
+                # Generate the CASE statements for e_amount and e_curr_amount
+                e_amount_cases = "\n".join(
+                    [f"WHEN {int(equipment_id[1:])} THEN {int(missing_amount)}" for equipment_id, _, missing_amount in return_list]
+                )
 
-                    # Update the equipment amounts
-                    update_equipment_query = """
-                        UPDATE equipment
-                        SET e_amount = e_amount - ?,
-                            e_curr_amount = e_curr_amount + ?
-                        WHERE e_id = ?
-                    """
+                e_curr_amount_cases = "\n".join(
+                    [f"WHEN {int(equipment_id[1:])} THEN {int(return_amount)}" for equipment_id, return_amount, _ in return_list]
+                )
 
-                    cursor.execute(update_equipment_query, (missing_amount, return_amount, equipment_int_id))
-                    connection.commit
+                # Format the query with the generated CASE statements and equipment_ids
+                formatted_query = update_equipment_query.format(
+                    e_amount_cases=e_amount_cases,
+                    e_curr_amount_cases=e_curr_amount_cases,
+                    equipment_ids=", ".join(map(str, equipment_ids))
+                )
+
+                # Execute the formatted query
+                cursor.execute(formatted_query)
+                connection.commit()
 
                 print("Transaction successful, database updated.")
 
@@ -397,7 +420,6 @@ class ReturnPage(QWidget):
 
         print("default no selection")
 
-       
     def get_default_image(self):
         # Create a default image using a Qt Awesome icon
         icon = qta.icon('fa.file-image-o', color='white')  # Use Qt Awesome icon
