@@ -349,6 +349,27 @@ class ReturnPage(QWidget):
             # Now return_list contains tuples of (equipment_id, return_amount, missing_amount)
             print(return_list)
 
+            # Create a formatted string of selected items for the message box
+            item_list = "\n".join([f"Equipment ID: {equipment_id}, Amount: {return_amount}, Missing: {missing_amount}" for equipment_id, return_amount, missing_amount in return_list])
+            message = f"The following items will be returned:\n{item_list}\n\nDo you want to proceed?"
+
+                # Show the confirmation dialog
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Confirm Return")
+            msg_box.setText(message)
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+            # Change button text for "Yes" and "No"
+            msg_box.button(QMessageBox.Yes).setText("Confirm")
+            msg_box.button(QMessageBox.No).setText("Cancel")
+
+            reply = msg_box.exec_()
+
+            if reply == QMessageBox.No:  # User clicked "Cancel"
+                self.main_window.show_dashboard()
+                print("Return operation canceled by the user.")
+                return  # Skip the operation if the user clicked "Cancel"
+
             try:
                 # Step 1: Connect to the database
                 connection = mysql.connector.connect(
@@ -359,7 +380,7 @@ class ReturnPage(QWidget):
                 )
                 cursor = connection.cursor()
 
-                # Step 2: Insert into the 'borrow' table
+                # Step 2: Remove into the 'borrow' table
                 delete_borrowed_equipment_query = "DELETE FROM borrowed_equipment WHERE borrow_id = %s"
                 cursor.execute(delete_borrowed_equipment_query, (borrow_id,))
                 connection.commit()  
@@ -470,5 +491,3 @@ class ReturnPage(QWidget):
         rounded_pixmap.setMask(mask.mask())
         painter.end()
         label.setPixmap(rounded_pixmap)
-
-        

@@ -265,7 +265,13 @@ class BorrowPage(QWidget):
         }
 
         if not selected_items:
-            print("No equipment selected to borrow.")
+            wrn_box = QMessageBox(self)
+            wrn_box.setWindowTitle("No Equipment Selected")
+            wrn_box.setText("No equipment selected to borrow.")
+            wrn_box.setStandardButtons(QMessageBox.Yes)
+
+            wrn_box.button(QMessageBox.Yes).setText("OK")
+            wrn_box.exec_()
             return
         
         # Create a formatted string of selected items for the message box
@@ -391,7 +397,6 @@ class BorrowPage(QWidget):
         
         # Populate the filtered equipment list
         self.populate_equipment_list(filtered_equipment)
-
 
     def set_rounded_pixmap(self, label, pixmap):
         rounded_pixmap = pixmap.scaled(label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)

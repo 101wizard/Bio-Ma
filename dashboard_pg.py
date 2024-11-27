@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QFrame, QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt
+import mysql.connector
 
 class DashboardPage(QWidget):
     def __init__(self, main_window):
@@ -119,28 +120,61 @@ class DashboardPage(QWidget):
         # Add widget to layout
         right_layout.addWidget(right_widget)
         
-        # Sample notifications (5 entries as requested)
-        notifications = [
-            ("PersonA", "14/8/2024", "14/8/2024 5:10 P.M."),
-            ("PersonB", "12/8/2024", "14/8/2024 5:20 P.M."),
-            ("PersonC", "13/8/2024", "14/8/2024 5:30 P.M."),
-            ("PersonD", "13/8/2024", "14/8/2024 5:40 P.M."),
-            ("PersonE", "10/8/2024", "14/8/2024 5:50 P.M."),
-            ("PersonF", "10/8/2024", "14/8/2024 5:50 P.M."),
-            ("PersonG", "10/8/2024", "14/8/2024 5:50 P.M."),
-            ("PersonH", "10/8/2024", "14/8/2024 5:50 P.M."),
-            ("PersonI", "10/8/2024", "14/8/2024 5:50 P.M."),
-            ("PersonJ", "10/8/2024", "14/8/2024 5:50 P.M."),
-        ]
+        # notifications
+        notifications = self.fetch_notification()
         
         for entity, due_date, curr_date_time in notifications:
             status_text = self.generate_notification_status(due_date, curr_date_time)
-            self.add_notification(notification_layout_inside, entity, status_text, due_date, curr_date_time)
+            self.add_notification(notification_layout_inside, entity, status_text, due_date)
 
         layout.addLayout(right_layout)
 
         main_layout.addWidget(label)
         main_layout.addLayout(layout)
+
+    def fetch_notification(self):
+        try:
+            # Step 1: Connect to the database
+            connection = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="test"
+            )
+            cursor = connection.cursor()
+
+            # Prepare the query to fetch only researchers with due items
+            query = """
+                SELECT researcher.r_id, researcher.r_name, borrow.due_date, NOW()
+                FROM borrow
+                JOIN researcher ON borrow.r_id = researcher.r_id
+                WHERE DATE(borrow.due_date) <= DATE(NOW())
+            """
+            
+            # Execute the query
+            cursor.execute(query)
+            
+            # Fetch all the results
+            results = cursor.fetchall()
+
+            # Format the data into the desired format
+            notifications = [
+                (f"R{r_id:04d} : {r_name}", due_date.strftime("%d/%m/%Y"), current_date_time.strftime("%d/%m/%Y %I:%M %p"))
+                for r_id, r_name, due_date, current_date_time in results
+            ]
+            
+            return notifications
+
+        except mysql.connector.Error as e:
+            # Handle database errors
+            print(f"Error: {e}")
+            return []  # Return an empty list in case of an error
+
+        finally:
+            # Ensure the connection is closed properly
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
 
     def generate_notification_status(self, due_date, curr_date_time):
         # Logic to determine notification status
@@ -148,9 +182,9 @@ class DashboardPage(QWidget):
         curr_date_obj = self.parse_date(curr_date_time.split()[0])  # only use the date part
 
         if due_date_obj == curr_date_obj:
-            return "with items due today has entered the lab"
+            return "have items due today!"
         elif due_date_obj < curr_date_obj:
-            return "with overdue items haven't returned has entered the lab"
+            return "have unreturned overdue items!"
         else:
             return ""
 
@@ -158,7 +192,7 @@ class DashboardPage(QWidget):
         from datetime import datetime
         return datetime.strptime(date_str, "%d/%m/%Y")
 
-    def add_notification(self, layout, entity, status, due_date, curr_date_time):
+    def add_notification(self, layout, entity, status, due_date):
         notification_frame = QFrame()
         notification_frame.setFixedHeight(80)  # Consistent height for each notification bar
         notification_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -183,7 +217,7 @@ class DashboardPage(QWidget):
         details_layout.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Minimum, QSizePolicy.Fixed))
 
         # Due date and current time
-        datetime_label = QLabel(f"due date: {due_date}    {curr_date_time}")
+        datetime_label = QLabel(f"due date: {due_date}")
         datetime_label.setStyleSheet("font-size: 12px;")
         details_layout.addWidget(datetime_label)
 

@@ -275,7 +275,7 @@ class BorrowReturnLoadPage(QWidget):
             cursor = connection.cursor()
 
             # Check if the user has pending returns
-            query = "SELECT COUNT(*) FROM borrow WHERE r_id = %s AND due_date >= NOW()"
+            query = "SELECT COUNT(*) FROM borrow WHERE r_id = %s"
             cursor.execute(query, (researcher_id,))
             pending_return = cursor.fetchone()[0] > 0
 
